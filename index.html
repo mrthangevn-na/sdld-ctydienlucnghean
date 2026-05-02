@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SLD Engineer Pro v7.0 - RMU Original Design</title>
+    <title>SLD Engineer Pro v7.0 - Cloud List & RMU Fixed</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -30,6 +30,18 @@
         .delete-btn { position: absolute; top: -20px; left: -10px; color: white; background: #ff4444; cursor: pointer; font-weight: bold; font-size: 16px; display: none; z-index: 1000; border-radius: 50%; width: 22px; height: 22px; text-align: center; line-height: 20px; border: 2px solid #fff; }
         .obj-wrap:hover .delete-btn { display: block; }
 
+        /* RMU Nút điều khiển */
+        .rmu-ctrl-box { position: absolute; display: flex; flex-direction: column; gap: 2px; z-index: 100; }
+        .btn-s { padding: 2px; font-size: 9px; color: white; border: none; border-radius: 2px; cursor: pointer; min-width: 35px; border: 1px solid #000; }
+
+        /* UI Dự án */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; display: none; align-items: center; justify-content: center; }
+        .modal-content { background: #222; border: 1px solid #444; width: 350px; border-radius: 10px; padding: 20px; max-height: 80%; display: flex; flex-direction: column; }
+        .modal-header { font-weight: bold; color: #edca1a; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; justify-content: space-between; }
+        .project-list { overflow-y: auto; flex: 1; }
+        .project-item { padding: 10px; background: #333; margin-bottom: 5px; border-radius: 4px; cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; }
+        .project-item:hover { background: #444; border-left: 3px solid var(--accent); }
+
         /* Graphics MC & MBA */
         .mc-container { position: relative; margin-top: 30px; margin-left: 10px; }
         .mc-box { width: 50px; height: 90px; border: 2px solid var(--box); background: #000; position: relative; pointer-events: none; }
@@ -40,33 +52,42 @@
         .mc-ui-right { position: absolute; left: 65px; top: 30px; display: flex; flex-direction: column; gap: 4px; }
         .btn-ctrl { padding: 4px 8px; font-size: 10px; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; color: white; min-width: 60px; }
         .btn-on { background: #b30000; } .btn-off { background: #006400; }
-        .btn-s { padding: 2px; font-size: 9px; color: white; border: none; border-radius: 2px; cursor: pointer; min-width: 35px; }
 
-        /* RMU Symbol Box */
-        .symbol-box { border: 2px solid var(--box); position: relative; background: rgba(255,255,255,0.05); }
-
-        /* Busbar */
         .busbar-container { position: relative; display: flex; align-items: center; padding-top: 40px; }
         .busbar-line { height: 8px; min-width: 50px; cursor: move; border-radius: 4px; }
         .bus-handle { width: 10px; height: 20px; background: #fff; position: absolute; right: 0; top: 34px; cursor: ew-resize; z-index: 10; }
-
-        /* Port & Wires */
         .port { width: 14px; height: 14px; background: #edca1a; border-radius: 50%; position: absolute; cursor: crosshair; z-index: 50; border: 2px solid #000; transform: translate(-50%, -50%); }
         svg.conn-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
         .wire { stroke: var(--off); stroke-width: 4; fill: none; pointer-events: stroke; cursor: pointer; }
         .wire.powered { stroke: var(--on); }
         .wire-label-input { position: absolute; background: rgba(0,0,0,0.7); border: 1px solid #444; color: #00ff00; font-size: 10px; text-align: center; width: 100px; transform: translate(-50%, -100%); z-index: 20; border-radius: 2px; outline: none; }
+        .symbol-box { border: 2px solid var(--box); position: relative; background: rgba(255,255,255,0.05); }
     </style>
 </head>
 <body>
 
+<!-- Header -->
 <div class="header">
     <h2 style="font-size:16px; color:#edca1a; margin:0">SLD ENGINEER PRO v7.0 CLOUD</h2>
     <div class="top-btns">
         <button onclick="undo()">↩ Undo</button>
         <button onclick="clearCanvas()">Làm trắng</button>
-        <button onclick="loadFromCloud()" style="background:#ffc107; color:black; font-weight:bold">MỞ DỰ ÁN</button>
+        <button onclick="showProjectList()" style="background:#ffc107; color:black; font-weight:bold">MỞ DỰ ÁN</button>
         <button onclick="saveToCloud()" style="background:#28a745; font-weight:bold">LƯU ĐÁM MÂY</button>
+    </div>
+</div>
+
+<!-- Modal Danh sách dự án -->
+<div id="projectModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span>DANH SÁCH DỰ ÁN</span>
+            <span style="cursor:pointer" onclick="closeModal()">✖</span>
+        </div>
+        <div id="projectList" class="project-list">
+            <!-- Dòng dự án sẽ hiện ở đây -->
+        </div>
+        <button style="margin-top:15px; background:#444" onclick="closeModal()">Đóng</button>
     </div>
 </div>
 
@@ -102,7 +123,6 @@
         messagingSenderId: "931677457263",
         appId: "1:931677457263:web:6bd129cd12e53a5f71369a"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
@@ -111,31 +131,54 @@
     const ws = document.getElementById('ws');
     const connLayer = document.getElementById('conn-layer');
     const ghostPath = document.getElementById('ghost-path');
-    
     let data = { nodes: [], wires: [] };
     let history = [];
     let selectedPort = null;
     let draggingWire = null;
     const PASS = "123456";
 
-    // --- CLOUD FUNCTIONS ---
+    // --- CHỨC NĂNG CLOUD TỐI ƯU ---
     function saveToCloud() {
-        const name = prompt("Nhập tên dự án để lưu:");
+        const name = prompt("Nhập tên dự án mới để lưu:");
         if (!name) return;
-        db.ref('projects/' + name).set(data).then(() => alert("Đã lưu lên mây!"));
+        db.ref('projects/' + name).set(data).then(() => alert("Đã lưu dự án: " + name));
     }
 
-    function loadFromCloud() {
-        const name = prompt("Nhập tên dự án muốn mở:");
-        if (!name) return;
+    function showProjectList() {
+        const listDiv = document.getElementById('projectList');
+        listDiv.innerHTML = "<p style='text-align:center'>Đang tải danh sách...</p>";
+        document.getElementById('projectModal').style.display = 'flex';
+
+        db.ref('projects').once('value', (snapshot) => {
+            listDiv.innerHTML = "";
+            if (!snapshot.exists()) {
+                listDiv.innerHTML = "<p>Chưa có dự án nào.</p>";
+                return;
+            }
+            snapshot.forEach((child) => {
+                const name = child.key;
+                const item = document.createElement('div');
+                item.className = 'project-item';
+                item.innerHTML = `📁 ${name}`;
+                item.onclick = () => loadProject(name);
+                listDiv.appendChild(item);
+            });
+        });
+    }
+
+    function loadProject(name) {
         db.ref('projects/' + name).once('value', (s) => {
             if (s.exists()) {
                 const d = s.val();
                 data = { nodes: d.nodes || [], wires: d.wires || [] };
-                render(); alert("Đã tải xong!");
-            } else alert("Không tìm thấy dự án!");
+                render();
+                closeModal();
+                alert("Đã mở dự án: " + name);
+            }
         });
     }
+
+    function closeModal() { document.getElementById('projectModal').style.display = 'none'; }
 
     // --- LOGIC VẼ VÀ ĐIỀU KHIỂN ---
     function evDrag(ev, type) { ev.dataTransfer.setData("type", type); }
@@ -182,7 +225,6 @@
         return true;
     }
 
-    // --- RENDER CHÍNH (KHÔI PHỤC THIẾT KẾ RMU GỐC) ---
     function render() {
         Array.from(canvas.children).forEach(c => { if (c.id !== 'conn-layer') c.remove(); });
         solvePower();
@@ -236,7 +278,7 @@
         renderWires();
     }
 
-    // HÀM VẼ RMU CHUẨN THIẾT KẾ TRONG HÌNH
+    // RMU VỚI NÚT ĐIỀU KHIỂN DỜI SANG TRÁI (bx - 48)
     function getRMUHtml(node) {
         let h = `<div style="margin-top:30px; position:relative; margin-left:10px">
                     <input class="mc-label" style="left:${node.width-80}px" placeholder="Tên RMU..." value="${node.label}" onchange="updateLabel('${node.id}', this.value)">
@@ -249,7 +291,7 @@
             h += `<div style="position:absolute; width:2px; height:15px; left:${bx-1}px; top:20px; background:${node.powered?'var(--on)':'white'}"></div>
                   <div style="position:absolute; width:2px; height:25px; left:${bx-1}px; top:35px; background:${armCol}; transform-origin: bottom center; transform:rotate(${s?0:35}deg)"><div class="pivot" style="top:-3px; background:inherit"></div><div class="pivot" style="bottom:-3px; background:inherit"></div></div>
                   <div style="position:absolute; width:2px; height:50px; left:${bx-1}px; top:60px; background:${botCol}"></div>
-                  <div style="position:absolute; left:${bx-32}px; top:70px; display:flex; flex-direction:column; gap:2px">
+                  <div class="rmu-ctrl-box" style="left:${bx-48}px; top:70px">
                      <button class="btn-s" style="background:${s?'#b30000':'#444'}" onclick="controlRMU('${node.id}', ${i}, true)">ON</button>
                      <button class="btn-s" style="background:${!s?'#006400':'#444'}" onclick="controlRMU('${node.id}', ${i}, false)">OFF</button>
                   </div>`;
@@ -305,7 +347,6 @@
     };
     canvas.onmouseup = () => { if(draggingWire!==null){ draggingWire=null; pushHistory(); } };
 
-    // --- TIỆN ÍCH ---
     function controlMC(id, v) { if (prompt("Mật khẩu:") === PASS) { data.nodes.find(n=>n.id===id).state = v; pushHistory(); render(); } }
     function controlRMU(id, b, v) { if (prompt("Mật khẩu:") === PASS) { data.nodes.find(n=>n.id===id).states[b] = v; pushHistory(); render(); } }
     function deleteNode(id) { if(confirm("Xóa?")) { data.nodes = data.nodes.filter(n=>n.id!==id); data.wires=data.wires.filter(w=>w.from!==id&&w.to!==id); pushHistory(); render(); } }
