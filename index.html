@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SLD Engineer Pro v7.9 - Original Graphics & Cloud</title>
+    <title>SLD Engineer Pro v7.9.1 - Balanced RMU & Full Cloud</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -12,10 +12,10 @@
         :root { --bg: #0b0b0b; --panel: #1e1e1e; --accent: #4a90e2; --on: #ff0000; --off: #00ff00; --box: #3b5b91; }
         body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
 
-        /* Header & Toolbar */
+        /* Header */
         .header { height: 50px; background: var(--panel); display: flex; align-items: center; padding: 0 15px; border-bottom: 1px solid #333; justify-content: space-between; z-index: 1001; position: relative; }
         .header-left { display: flex; align-items: center; gap: 10px; }
-        .project-title { position: absolute; left: 50%; transform: translateX(-50%); color: #edca1a; font-weight: bold; font-size: 14px; text-transform: uppercase; pointer-events: none; }
+        .project-title { position: absolute; left: 50%; transform: translateX(-50%); color: #edca1a; font-weight: bold; font-size: 14px; text-transform: uppercase; pointer-events: none; white-space: nowrap; }
         .top-btns { display: flex; gap: 8px; align-items: center; }
         
         button { background: #333; color: white; border: 1px solid #555; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-size: 11px; transition: 0.2s; }
@@ -23,7 +23,7 @@
 
         .main { display: flex; height: calc(100% - 50px); position: relative; }
         
-        /* Sidebar Toggle */
+        /* Sidebar */
         .sidebar { width: 200px; background: var(--panel); border-right: 1px solid #333; padding: 15px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; transition: 0.3s; z-index: 1000; }
         .sidebar.hidden { margin-left: -240px; }
         .tool-item { background: #2d2d2d; border: 1px solid #444; padding: 12px; border-radius: 6px; cursor: grab; text-align: center; font-size: 11px; user-select: none; }
@@ -33,12 +33,12 @@
         #canvas-container { transform-origin: 0 0; transition: transform 0.1s ease-out; }
         #canvas { width: 4000px; height: 3000px; position: relative; }
 
-        /* Object Wrap */
+        /* Objects */
         .obj-wrap { position: absolute; cursor: move; z-index: 10; touch-action: none; }
         .delete-btn { position: absolute; top: -20px; left: -10px; color: white; background: #ff4444; cursor: pointer; font-weight: bold; border-radius: 50%; width: 22px; height: 22px; text-align: center; line-height: 20px; border: 2px solid #fff; display: none; z-index: 100; }
         .obj-wrap:hover .delete-btn { display: block; }
 
-        /* Graphics Gốc: MC, MBA, RMU */
+        /* Graphics */
         .mc-container { position: relative; margin-top: 30px; margin-left: 10px; }
         .mc-box { width: 50px; height: 90px; border: 2px solid var(--box); background: #000; position: relative; pointer-events: none; }
         .line-v { position: absolute; width: 2px; left: 24px; }
@@ -49,30 +49,31 @@
         .mc-ui-right { position: absolute; left: 65px; top: 30px; display: flex; flex-direction: column; gap: 4px; }
         .btn-ctrl { padding: 4px 8px; font-size: 10px; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; color: white; min-width: 60px; }
         .btn-on { background: #b30000; } .btn-off { background: #006400; }
-        .btn-s { padding: 2px; font-size: 9px; color: white; border: none; border-radius: 2px; cursor: pointer; min-width: 38px; border: 1px solid #000; }
-
-        /* RMU Symbol Box */
+        
+        /* RMU Styles */
         .symbol-box { border: 2px solid var(--box); position: relative; background: rgba(255,255,255,0.05); border-radius: 4px; }
+        .rmu-ctrl-box { position: absolute; display: flex; flex-direction: column; gap: 2px; z-index: 100; width: 40px; align-items: center; }
+        .btn-s { padding: 2px; font-size: 9px; color: white; border: none; border-radius: 2px; cursor: pointer; min-width: 38px; border: 1px solid #000; }
 
         /* Busbar */
         .busbar-container { position: relative; display: flex; align-items: center; padding-top: 40px; }
         .busbar-line { height: 8px; min-width: 50px; cursor: move; border-radius: 4px; }
         .bus-handle { width: 10px; height: 20px; background: #fff; position: absolute; right: 0; top: 34px; cursor: ew-resize; z-index: 10; }
 
-        /* Text Box Tool */
+        /* Text Box */
         .text-box-container { border: 1px dashed #edca1a; display: flex; align-items: center; justify-content: center; background: rgba(237, 202, 26, 0.05); position: relative; overflow: hidden; }
         .text-box-input { background: transparent; border: none; color: white; width: 100%; height: 100%; text-align: center; outline: none; resize: none; overflow: hidden; font-family: inherit; }
         .resize-handle { width: 12px; height: 12px; background: #edca1a; position: absolute; right: 0; bottom: 0; cursor: nwse-resize; z-index: 101; }
 
-        /* Project Modal Tối ưu 5 tên */
+        /* Modal */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: center; justify-content: center; }
         .modal-content { background: #1a1a1a; border: 1px solid #444; width: 450px; border-radius: 12px; padding: 25px; display: flex; flex-direction: column; max-height: 85vh; }
-        .project-list { overflow-y: auto; flex: 1; min-height: 280px; margin-top: 15px; border: 1px solid #333; padding: 5px; border-radius: 6px; }
+        .project-list { overflow-y: auto; flex: 1; min-height: 300px; margin-top: 15px; border: 1px solid #333; padding: 5px; border-radius: 6px; }
         .project-item { padding: 12px; background: #2a2a2a; margin-bottom: 8px; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .project-item:hover { background: #333; color: var(--accent); }
         .search-input { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; margin-bottom: 10px; outline: none; box-sizing: border-box; }
 
-        /* Port & Wires */
+        /* Wires */
         .port { width: 14px; height: 14px; background: #edca1a; border-radius: 50%; position: absolute; cursor: crosshair; z-index: 50; border: 2px solid #000; transform: translate(-50%, -50%); }
         svg.conn-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
         .wire { stroke: var(--off); stroke-width: 4; fill: none; pointer-events: stroke; cursor: pointer; }
@@ -143,6 +144,7 @@
 </div>
 
 <script>
+    // DÁN CONFIG CỦA BẠN VÀO ĐÂY
     const firebaseConfig = {
         apiKey: "AIzaSyC9aGNmyKDkHvqQg0CY9SfrmNrMhFQGSzo",
         authDomain: "my-sld-project.firebaseapp.com",
@@ -152,6 +154,7 @@
         messagingSenderId: "931677457263",
         appId: "1:931677457263:web:6bd129cd12e53a5f71369a"
     };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
@@ -168,7 +171,7 @@
     let currentZoom = 1.0;
     let allProjectNames = [];
 
-    // --- ZOOM & UI ---
+    // --- UI HELPERS ---
     function changeZoom(delta) {
         currentZoom = Math.min(Math.max(0.3, currentZoom + delta), 2.5);
         canvasContainer.style.transform = `scale(${currentZoom})`;
@@ -177,7 +180,7 @@
     function isGrid() { return document.getElementById('gridToggle').checked; }
     function snap(v) { return isGrid() ? Math.round(v / 20) * 20 : v; }
 
-    // --- CLOUD ---
+    // --- CLOUD MANAGEMENT ---
     function openModal(mode) {
         document.getElementById('projectModal').style.display = 'flex';
         document.getElementById('saveNewGroup').style.display = (mode === 'save' ? 'flex' : 'none');
@@ -226,7 +229,7 @@
     }
     function closeModal() { document.getElementById('projectModal').style.display = 'none'; }
 
-    // --- LOGIC HỆ THỐNG VẼ ---
+    // --- DRAWING LOGIC ---
     function pushHistory() {
         const state = JSON.stringify(data);
         if (history.length === 0 || history[history.length - 1] !== state) {
@@ -268,16 +271,8 @@
             data.wires.forEach(w => {
                 const n1 = data.nodes.find(n => n.id === w.from), n2 = data.nodes.find(n => n.id === w.to);
                 if (!n1 || !n2) return;
-                if (n1.powered && isPortActive(n1, w.fromPort)) {
-                    if (n2.type.startsWith('rmu') && w.toPort.startsWith('bay')) {
-                        if(n2.states[parseInt(w.toPort.split('_')[1])]) n2.powered = true;
-                    } else n2.powered = true;
-                }
-                if (n2.powered && isPortActive(n2, w.toPort)) {
-                    if (n1.type.startsWith('rmu') && w.fromPort.startsWith('bay')) {
-                        if(n1.states[parseInt(w.fromPort.split('_')[1])]) n1.powered = true;
-                    } else n1.powered = true;
-                }
+                if (n1.powered && isPortActive(n1, w.fromPort)) n2.powered = true;
+                if (n2.powered && isPortActive(n2, w.toPort)) n1.powered = true;
             });
         }
     }
@@ -351,10 +346,11 @@
                     <div style="position:absolute; height:2px; width:80%; left:10%; top:20px; background:${node.powered?'var(--on)':'white'}"></div>`;
         for (let i = 0; i < node.states.length; i++) {
             let bx = 45 + (i * 70), s = node.states[i];
+            // Vị trí nút được tính toán căn giữa bay (bx - 20px)
             h += `<div style="position:absolute; width:2px; height:15px; left:${bx-1}px; top:20px; background:${node.powered?'var(--on)':'white'}"></div>
                   <div style="position:absolute; width:2px; height:25px; left:${bx-1}px; top:35px; background:${s?(node.powered?'var(--on)':'white'):'var(--off)'}; transform-origin: bottom center; transform:rotate(${s?0:35}deg)"><div class="pivot" style="top:-3px; background:inherit"></div><div class="pivot" style="bottom:-3px; background:inherit"></div></div>
                   <div style="position:absolute; width:2px; height:75px; left:${bx-1}px; top:60px; background:${(node.powered && s)?'var(--on)':'var(--off)'}"></div>
-                  <div class="rmu-ctrl-box" style="left:${bx-53}px; top:85px">
+                  <div class="rmu-ctrl-box" style="left:${bx-20}px; top:85px">
                      <button class="btn-s" style="background:${s?'#b30000':'#444'}" onclick="controlMC_RMU('${node.id}', ${i}, true)">ON</button>
                      <button class="btn-s" style="background:${!s?'#006400':'#444'}" onclick="controlMC_RMU('${node.id}', ${i}, false)">OFF</button>
                   </div>`;
@@ -411,6 +407,7 @@
         if (selectedPort) ghostPath.setAttribute('d', `M ${selectedPort.absPos.x} ${selectedPort.absPos.y} V ${my} H ${mx} V ${my}`);
         if (draggingWire !== null) { data.wires[draggingWire].midY = my; renderWires(); }
     };
+    canvas.onmouseup = () => { if(draggingWire!==null){ draggingWire=null; pushHistory(); } };
 
     function controlMC(id, v) { if (prompt("MK:") === "123456") { data.nodes.find(n=>n.id===id).state = v; pushHistory(); render(); } }
     function controlMC_RMU(id, b, v) { if (prompt("MK:") === "123456") { data.nodes.find(n=>n.id===id).states[b] = v; pushHistory(); render(); } }
