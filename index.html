@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SLD Engineer Pro v8.9 - Power Fix & Balanced RMU</title>
+    <title>SLD Engineer Pro v9.0 - RMU Power Logic Fixed</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -14,10 +14,10 @@
 
         /* Header */
         .header { height: 50px; background: var(--panel); display: flex; align-items: center; padding: 0 15px; border-bottom: 1px solid #333; justify-content: space-between; z-index: 1001; position: relative; }
-        .project-title { position: absolute; left: 50%; transform: translateX(-50%); color: #edca1a; font-weight: bold; font-size: 14px; text-transform: uppercase; pointer-events: none; }
+        .project-title { position: absolute; left: 50%; transform: translateX(-50%); color: #edca1a; font-weight: bold; font-size: 14px; text-transform: uppercase; pointer-events: none; white-space: nowrap; }
         .top-btns { display: flex; gap: 8px; align-items: center; }
         
-        button { background: #333; color: white; border: 1px solid #555; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        button { background: #333; color: white; border: 1px solid #555; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-size: 11px; font-weight: bold; transition: 0.2s; }
         button:hover { background: var(--accent); }
 
         .main { display: flex; height: calc(100% - 50px); position: relative; }
@@ -46,13 +46,13 @@
         .btn-on { background: #b30000; } .btn-off { background: #006400; }
         
         .symbol-box { border: 2px solid var(--box); position: relative; background: rgba(255,255,255,0.05); border-radius: 4px; }
-        .rmu-ctrl-box { position: absolute; display: flex; flex-direction: column; gap: 2px; z-index: 100; width: 40px; align-items: center; }
-        .btn-s { padding: 2px; font-size: 9px; color: white; border: none; border-radius: 2px; cursor: pointer; min-width: 38px; border: 1px solid #000; font-weight: bold; }
+        .rmu-ctrl-box { position: absolute; display: flex; flex-direction: column; gap: 2px; z-index: 100; width: 44px; align-items: center; }
+        .btn-s { padding: 2px; font-size: 9px; color: white; border: none; border-radius: 2px; cursor: pointer; min-width: 40px; border: 1px solid #000; font-weight: bold; }
 
         /* Wires */
         svg.conn-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
-        .wire-path { stroke: var(--off); stroke-width: 5; fill: none; pointer-events: stroke; cursor: ns-resize; transition: stroke 0.2s; }
-        .wire-path.powered { stroke: var(--on) !important; }
+        .wire-path { stroke: var(--off); stroke-width: 5; fill: none; pointer-events: stroke; cursor: ns-resize; }
+        .wire-path.powered { stroke: var(--on); }
 
         /* Port & Busbar */
         .port { width: 14px; height: 14px; background: #edca1a; border-radius: 50%; position: absolute; cursor: crosshair; z-index: 50; border: 2px solid #000; transform: translate(-50%, -50%); }
@@ -71,7 +71,7 @@
 
 <div class="header">
     <div class="header-left"><button onclick="undo()">↩ Undo</button></div>
-    <div class="project-title" id="displayProjectName">CHƯA CÓ TÊN</div>
+    <div class="project-title" id="displayProjectName">DỰ ÁN TRỐNG</div>
     <div class="top-btns">
         <div style="font-size:10px; display:flex; align-items:center; gap:3px; background:#222; padding:3px 10px; border-radius:6px; margin-right:10px">
             Zoom: <button onclick="changeZoom(0.1)">+</button><button onclick="changeZoom(-0.1)">-</button>
@@ -117,7 +117,7 @@
         <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'mba')">Máy Biến Áp</div>
         <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'busbar')">Thanh Cái</div>
         <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'text_box')" style="color:#edca1a">Ô Ghi Chú</div>
-        <div style="color:#888; font-size:10px; text-align:center; margin-top:10px">RMU</div>
+        <div style="color:#888; font-size:10px; text-align:center; margin-top:10px">HỆ RMU</div>
         <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'rmu2')">RMU 2 Ngăn</div>
         <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'rmu3')">RMU 3 Ngăn</div>
         <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'rmu4')">RMU 4 Ngăn</div>
@@ -135,7 +135,6 @@
 </div>
 
 <script>
-    // FIREBASE CONFIG
     const firebaseConfig = {
         apiKey: "AIzaSyC9aGNmyKDkHvqQg0CY9SfrmNrMhFQGSzo",
         authDomain: "my-sld-project.firebaseapp.com",
@@ -161,15 +160,15 @@
     const connLayer = document.getElementById('conn-layer');
     const ghostPath = document.getElementById('ghost-path');
 
-    // --- FILE MANAGEMENT ---
-    function handleNew() { if(data.nodes.length > 0 && confirm("Lưu dự án hiện tại trước khi tạo mới?")) openSaveModal(() => resetB()); else resetB(); }
-    function resetB() { let n = prompt("Nhập tên dự án mới:"); if(!n) return; data={nodes:[],wires:[]}; selectedProjectName=n; document.getElementById('displayProjectName').innerText=n.toUpperCase(); render(); pushHistory(); }
-    function handleSave() { if(!selectedProjectName) openSaveModal(); else db.ref('projects/'+selectedProjectName).set(data).then(()=>alert("Đã lưu dự án: " + selectedProjectName)); }
+    // --- FILE ---
+    function handleNew() { if(data.nodes.length > 0 && confirm("Lưu trước khi tạo mới?")) openSaveModal(() => resetB()); else resetB(); }
+    function resetB() { let n = prompt("Tên dự án:"); if(!n) return; data={nodes:[],wires:[]}; selectedProjectName=n; document.getElementById('displayProjectName').innerText=n.toUpperCase(); render(); pushHistory(); }
+    function handleSave() { if(!selectedProjectName) openSaveModal(); else db.ref('projects/'+selectedProjectName).set(data).then(()=>alert("Đã lưu!")); }
     function openOpenModal() { document.getElementById('openModal').style.display='flex'; fetchP('openList', (n)=>nameInList=n); }
     function confirmOpen() { if(!nameInList) return; db.ref('projects/'+nameInList).once('value', s => { data=s.val()||{nodes:[],wires:[]}; if(!data.wires) data.wires=[]; selectedProjectName=nameInList; document.getElementById('displayProjectName').innerText=selectedProjectName.toUpperCase(); render(); pushHistory(); closeModal('openModal'); }); }
     function openSaveModal(cb) { document.getElementById('saveModal').style.display='flex'; fetchP('saveList', (n)=>document.getElementById('saveInput').value=n); window.sCb=cb; }
     function confirmSaveAs() { let n = document.getElementById('saveInput').value.trim(); if(!n) return; db.ref('projects/'+n).set(data).then(()=>{ selectedProjectName=n; document.getElementById('displayProjectName').innerText=n.toUpperCase(); closeModal('saveModal'); if(window.sCb) window.sCb(); }); }
-    function fetchP(cid, onS) { const div=document.getElementById(cid); div.innerHTML="Đang tải..."; db.ref('projects').once('value', s => { div.innerHTML=""; if(s.exists()) s.forEach(c => { const i=document.createElement('div'); i.className='project-item'; i.innerText="📁 "+c.key; i.onclick=()=>{ Array.from(div.children).forEach(e=>e.classList.remove('selected')); i.classList.add('selected'); onS(c.key); }; div.appendChild(i); }); }); }
+    function fetchP(cid, onS) { const div=document.getElementById(cid); div.innerHTML="..."; db.ref('projects').once('value', s => { div.innerHTML=""; if(s.exists()) s.forEach(c => { const i=document.createElement('div'); i.className='project-item'; i.innerText="📁 "+c.key; i.onclick=()=>{ Array.from(div.children).forEach(e=>e.classList.remove('selected')); i.classList.add('selected'); onS(c.key); }; div.appendChild(i); }); }); }
     function closeModal(id) { document.getElementById(id).style.display='none'; }
 
     // --- LOGIC ---
@@ -182,11 +181,10 @@
         data.nodes.forEach(n => n.powered = false);
         // Nguồn khởi tạo từ Máy cắt tổng khi đóng
         data.nodes.forEach(n => { if(n.type === 'mc_tong' && n.state && !data.wires.some(w => w.to === n.id && w.toPort === 'top')) n.powered = true; });
-        for(let i=0; i<30; i++) {
+        for(let i=0; i<40; i++) {
             data.wires.forEach(w => {
                 const n1=data.nodes.find(n=>n.id===w.from), n2=data.nodes.find(n=>n.id===w.to);
                 if(!n1 || !n2) return;
-                // Kiểm tra truyền điện qua dây nối
                 if(n1.powered && isPortActive(n1, w.fromPort) && isPortActive(n2, w.toPort)) n2.powered = true;
                 if(n2.powered && isPortActive(n2, w.toPort) && isPortActive(n1, w.fromPort)) n1.powered = true;
             });
@@ -257,12 +255,19 @@
             <div class="symbol-box" style="width:${node.width}px; height:145px">
             <div style="position:absolute; height:4px; width:80%; left:10%; top:20px; background:${busC}"></div>`;
         for(let i=0; i<node.states.length; i++){
-            const bx=45+(i*70), s=node.states[i], wp=getPortPower(node.id, 'bay_'+i);
-            const lC = wp ? 'var(--on)' : 'white', aC = (s && (wp || node.powered)) ? 'var(--on)' : (s ? 'white' : 'var(--off)');
+            const bx=45+(i*70), s=node.states[i];
+            // Lấy trạng thái điện từ đầu vào (chấm vàng)
+            const wirePowered = getPortPower(node.id, 'bay_'+i);
+            
+            // Logic màu sắc:
+            const lineColor = wirePowered ? 'var(--on)' : 'white'; // Dây dưới cùng
+            const armColor = (s && (wirePowered || node.powered)) ? 'var(--on)' : (s ? 'white' : 'var(--off)'); // Cầu dao
+            const feederColor = (s && (wirePowered || node.powered)) ? 'var(--on)' : 'var(--off)'; // Đoạn sau cầu dao
+
             h += `<div style="position:absolute; width:2px; height:15px; left:${bx-1}px; top:20px; background:${busC}"></div>
-                  <div style="position:absolute; width:2px; height:25px; left:${bx-1}px; top:35px; background:${aC}; transform-origin: bottom center; transform:rotate(${s?0:35}deg)"><div class="pivot" style="top:-3px; background:inherit"></div><div class="pivot" style="bottom:-3px; background:inherit"></div></div>
-                  <div style="position:absolute; width:2px; height:75px; left:${bx-1}px; top:60px; background:${(wp && s)?'var(--on)':'var(--off)'}"></div>
-                  <div class="rmu-ctrl-box" style="left:${bx-20}px; top:85px">
+                  <div style="position:absolute; width:2px; height:25px; left:${bx-1}px; top:35px; background:${armColor}; transform-origin: bottom center; transform:rotate(${s?0:35}deg)"><div class="pivot" style="top:-3px; background:inherit"></div><div class="pivot" style="bottom:-3px; background:inherit"></div></div>
+                  <div style="position:absolute; width:2px; height:75px; left:${bx-1}px; top:60px; background:${lineColor}"></div>
+                  <div class="rmu-ctrl-box" style="left:${bx-21}px; top:85px">
                      <button class="btn-s" style="background:${s?'#b30000':'#444'}" onclick="controlMC_RMU('${node.id}', ${i}, true)">ON</button>
                      <button class="btn-s" style="background:${!s?'#006400':'#444'}" onclick="controlMC_RMU('${node.id}', ${i}, false)">OFF</button>
                   </div>`;
@@ -296,7 +301,6 @@
         data.wires.forEach((w, i) => {
             const n1=data.nodes.find(n=>n.id===w.from), n2=data.nodes.find(n=>n.id===w.to);
             if(!n1 || !n2) return;
-            // Xác định xem dây nối có điện hay không
             const isP = (n1.powered && isPortActive(n1, w.fromPort)) || (n2.powered && isPortActive(n2, w.toPort));
             const x1=n1.x+w.fRel.x, y1=n1.y+w.fRel.y, x2=n2.x+w.tRel.x, y2=n2.y+w.tRel.y;
             svg += `<path d="M ${x1} ${y1} V ${w.midY} H ${x2} V ${y2}" class="wire-path ${isP?'powered':''}" onmousedown="startDragWire(event, ${i})" onclick="if(event.ctrlKey) deleteWire(${i})"/>`;
@@ -304,10 +308,8 @@
         connLayer.innerHTML = `<path id="ghost-path" style="stroke:#fff;stroke-width:2;stroke-dasharray:5;fill:none;display:${selectedPort?'block':'none'}" d="${ghostPath.getAttribute('d')}"></path>` + svg;
     }
 
-    // --- MOUSE EVENTS ---
     function startDragWire(e, i) { e.stopPropagation(); draggingWireIdx = i; }
     function stopDragging() { if(draggingWireIdx!==null){ draggingWireIdx=null; pushHistory(); } }
-
     canvas.onmousemove = (e) => {
         const rect=canvas.getBoundingClientRect(), mx=snap((e.clientX-rect.left)/currentZoom), my=snap((e.clientY-rect.top)/currentZoom);
         if(selectedPort) ghostPath.setAttribute('d', `M ${selectedPort.abs.x} ${selectedPort.abs.y} V ${my} H ${mx} V ${my}`);
