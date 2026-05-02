@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SLD Engineer Pro v7.9.1 - Balanced RMU & Full Cloud</title>
+    <title>SLD Engineer Pro v8.0 - Final Correction</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -15,7 +15,7 @@
         /* Header */
         .header { height: 50px; background: var(--panel); display: flex; align-items: center; padding: 0 15px; border-bottom: 1px solid #333; justify-content: space-between; z-index: 1001; position: relative; }
         .header-left { display: flex; align-items: center; gap: 10px; }
-        .project-title { position: absolute; left: 50%; transform: translateX(-50%); color: #edca1a; font-weight: bold; font-size: 14px; text-transform: uppercase; pointer-events: none; white-space: nowrap; }
+        .project-title { position: absolute; left: 50%; transform: translateX(-50%); color: #edca1a; font-weight: bold; font-size: 14px; text-transform: uppercase; pointer-events: none; }
         .top-btns { display: flex; gap: 8px; align-items: center; }
         
         button { background: #333; color: white; border: 1px solid #555; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-size: 11px; transition: 0.2s; }
@@ -44,36 +44,28 @@
         .line-v { position: absolute; width: 2px; left: 24px; }
         .mc-arm { position: absolute; width: 2px; left: 24px; top: 25px; height: 35px; transform-origin: bottom center; transition: 0.3s; }
         .pivot { position: absolute; width: 6px; height: 6px; border: 1px solid #fff; border-radius: 50%; left: -3px; background: inherit; }
-        
         .mc-label { position: absolute; left: 65px; top: -30px; background: transparent; border: 1px dashed #555; color: #edca1a; font-weight: bold; font-size: 13px; width: 120px; outline: none; padding: 2px; }
-        .mc-ui-right { position: absolute; left: 65px; top: 30px; display: flex; flex-direction: column; gap: 4px; }
         .btn-ctrl { padding: 4px 8px; font-size: 10px; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; color: white; min-width: 60px; }
         .btn-on { background: #b30000; } .btn-off { background: #006400; }
         
-        /* RMU Styles */
         .symbol-box { border: 2px solid var(--box); position: relative; background: rgba(255,255,255,0.05); border-radius: 4px; }
-        .rmu-ctrl-box { position: absolute; display: flex; flex-direction: column; gap: 2px; z-index: 100; width: 40px; align-items: center; }
+        .rmu-ctrl-box { position: absolute; display: flex; flex-direction: column; gap: 2px; z-index: 100; align-items: center; }
         .btn-s { padding: 2px; font-size: 9px; color: white; border: none; border-radius: 2px; cursor: pointer; min-width: 38px; border: 1px solid #000; }
 
-        /* Busbar */
-        .busbar-container { position: relative; display: flex; align-items: center; padding-top: 40px; }
-        .busbar-line { height: 8px; min-width: 50px; cursor: move; border-radius: 4px; }
-        .bus-handle { width: 10px; height: 20px; background: #fff; position: absolute; right: 0; top: 34px; cursor: ew-resize; z-index: 10; }
+        /* Modal & List */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: center; justify-content: center; }
+        .modal-content { background: #1a1a1a; border: 1px solid #444; width: 450px; border-radius: 12px; padding: 25px; display: flex; flex-direction: column; max-height: 85vh; }
+        .project-list { overflow-y: auto; flex: 1; min-height: 320px; margin-top: 15px; border: 1px solid #333; padding: 8px; border-radius: 6px; background: #111; }
+        .project-item { padding: 12px; background: #2a2a2a; margin-bottom: 8px; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #444; }
+        .project-item:hover { background: #333; border-left-color: var(--accent); color: var(--accent); }
+        .search-input { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; margin-bottom: 10px; outline: none; box-sizing: border-box; }
 
         /* Text Box */
         .text-box-container { border: 1px dashed #edca1a; display: flex; align-items: center; justify-content: center; background: rgba(237, 202, 26, 0.05); position: relative; overflow: hidden; }
         .text-box-input { background: transparent; border: none; color: white; width: 100%; height: 100%; text-align: center; outline: none; resize: none; overflow: hidden; font-family: inherit; }
-        .resize-handle { width: 12px; height: 12px; background: #edca1a; position: absolute; right: 0; bottom: 0; cursor: nwse-resize; z-index: 101; }
+        .resize-handle { width: 12px; height: 12px; background: #edca1a; position: absolute; right: 0; bottom: 0; cursor: nwse-resize; }
 
-        /* Modal */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: center; justify-content: center; }
-        .modal-content { background: #1a1a1a; border: 1px solid #444; width: 450px; border-radius: 12px; padding: 25px; display: flex; flex-direction: column; max-height: 85vh; }
-        .project-list { overflow-y: auto; flex: 1; min-height: 300px; margin-top: 15px; border: 1px solid #333; padding: 5px; border-radius: 6px; }
-        .project-item { padding: 12px; background: #2a2a2a; margin-bottom: 8px; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .project-item:hover { background: #333; color: var(--accent); }
-        .search-input { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; margin-bottom: 10px; outline: none; box-sizing: border-box; }
-
-        /* Wires */
+        /* Port & Wire */
         .port { width: 14px; height: 14px; background: #edca1a; border-radius: 50%; position: absolute; cursor: crosshair; z-index: 50; border: 2px solid #000; transform: translate(-50%, -50%); }
         svg.conn-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
         .wire { stroke: var(--off); stroke-width: 4; fill: none; pointer-events: stroke; cursor: pointer; }
@@ -94,8 +86,8 @@
     <div class="top-btns">
         <div style="font-size:10px; display:flex; align-items:center; gap:3px; background:#222; padding:3px 10px; border-radius:6px">
             Zoom: 
-            <button onclick="changeZoom(0.1)" style="padding:2px 8px">+</button>
-            <button onclick="changeZoom(-0.1)" style="padding:2px 8px">-</button>
+            <button onclick="changeZoom(0.1)">+</button>
+            <button onclick="changeZoom(-0.1)">-</button>
             <input type="checkbox" id="gridToggle" style="margin-left:5px"> Snap
         </div>
         <button onclick="openModal('load')" style="background:#ffc107; color:black; font-weight:bold">MỞ</button>
@@ -111,7 +103,7 @@
         </div>
         <input type="text" id="projectSearch" class="search-input" placeholder="Tìm kiếm nhanh dự án..." oninput="filterProjects()">
         <div id="saveNewGroup" style="display:none; gap:5px; margin-bottom:10px">
-            <input type="text" id="newProjectName" class="search-input" style="margin:0" placeholder="Đặt tên mới để lưu...">
+            <input type="text" id="newProjectName" class="search-input" style="margin:0" placeholder="Tên dự án mới...">
             <button onclick="confirmSaveNew()" style="background:#28a745">Lưu mới</button>
         </div>
         <div id="projectList" class="project-list"></div>
@@ -144,7 +136,6 @@
 </div>
 
 <script>
-    // DÁN CONFIG CỦA BẠN VÀO ĐÂY
     const firebaseConfig = {
         apiKey: "AIzaSyC9aGNmyKDkHvqQg0CY9SfrmNrMhFQGSzo",
         authDomain: "my-sld-project.firebaseapp.com",
@@ -154,7 +145,6 @@
         messagingSenderId: "931677457263",
         appId: "1:931677457263:web:6bd129cd12e53a5f71369a"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
@@ -171,16 +161,15 @@
     let currentZoom = 1.0;
     let allProjectNames = [];
 
-    // --- UI HELPERS ---
+    // --- ZOOM & UI ---
     function changeZoom(delta) {
         currentZoom = Math.min(Math.max(0.3, currentZoom + delta), 2.5);
         canvasContainer.style.transform = `scale(${currentZoom})`;
     }
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('hidden'); }
-    function isGrid() { return document.getElementById('gridToggle').checked; }
-    function snap(v) { return isGrid() ? Math.round(v / 20) * 20 : v; }
+    function snap(v) { return document.getElementById('gridToggle').checked ? Math.round(v / 20) * 20 : v; }
 
-    // --- CLOUD MANAGEMENT ---
+    // --- CLOUD FIX ---
     function openModal(mode) {
         document.getElementById('projectModal').style.display = 'flex';
         document.getElementById('saveNewGroup').style.display = (mode === 'save' ? 'flex' : 'none');
@@ -189,7 +178,7 @@
     }
     function fetchProjects() {
         const listDiv = document.getElementById('projectList');
-        listDiv.innerHTML = "Đang tải danh sách...";
+        listDiv.innerHTML = "Đang quét dữ liệu mới...";
         db.ref('projects').once('value', s => {
             allProjectNames = [];
             if (s.exists()) s.forEach(c => allProjectNames.push(c.key));
@@ -206,25 +195,27 @@
             item.className = 'project-item';
             const isSave = document.getElementById('modalTitleText').innerText.includes('LƯU');
             item.innerHTML = `<span>📁 ${name}</span> ${isSave ? '<button style="background:#4a90e2; font-size:10px">GHI ĐÈ</button>' : ''}`;
-            item.onclick = () => { if(isSave) { if(confirm("Ghi đè dự án?")) saveData(name); } else loadProject(name); };
+            item.onclick = () => { if(isSave) { if(confirm("Ghi đè dự án: "+name+"?")) saveData(name); } else loadProject(name); };
             listDiv.appendChild(item);
         });
     }
     function confirmSaveNew() {
         const name = document.getElementById('newProjectName').value.trim();
-        if (name) saveData(name);
+        if (name) saveData(name); else alert("Vui lòng nhập tên!");
     }
     function saveData(name) {
         db.ref('projects/' + name).set(data).then(() => { 
             document.getElementById('displayProjectName').innerText = name;
-            alert("Đã lưu!"); closeModal(); 
+            alert("Đã lưu dự án: " + name); closeModal(); 
         });
     }
     function loadProject(name) {
         db.ref('projects/' + name).once('value', s => {
-            data = s.val(); if(!data.wires) data.wires=[];
-            document.getElementById('displayProjectName').innerText = name;
-            render(); pushHistory(); closeModal();
+            if(s.exists()){
+                data = s.val(); if(!data.wires) data.wires=[];
+                document.getElementById('displayProjectName').innerText = name;
+                render(); pushHistory(); closeModal();
+            }
         });
     }
     function closeModal() { document.getElementById('projectModal').style.display = 'none'; }
@@ -233,14 +224,12 @@
     function pushHistory() {
         const state = JSON.stringify(data);
         if (history.length === 0 || history[history.length - 1] !== state) {
-            history.push(state);
-            if (history.length > 50) history.shift();
+            history.push(state); if (history.length > 50) history.shift();
         }
     }
     function undo() {
         if (history.length <= 1) return;
-        history.pop();
-        data = JSON.parse(history[history.length - 1]);
+        history.pop(); data = JSON.parse(history[history.length - 1]);
         render();
     }
     function evDrag(ev, type) { ev.dataTransfer.setData("type", type); }
@@ -298,21 +287,25 @@
                             <div class="resize-handle" onmousedown="startResizeText(event, '${node.id}')"></div>
                         </div>`;
             } else if (node.type.startsWith('mc')) {
+                const pIn = node.powered ? 'var(--on)' : 'white';
+                const pOut = (node.powered && node.state) ? 'var(--on)' : 'var(--off)';
                 html = `<div class="mc-container">
                     <input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)">
                     <div class="mc-box">
-                        <div class="line-v" style="height:56px; top:-31px; background:${node.powered?'var(--on)':'white'}"></div>
+                        <div class="line-v" style="height:56px; top:-31px; background:${pIn}"></div>
                         <div class="mc-arm" style="transform:rotate(${node.state?0:35}deg); background:${node.state?(node.powered?'var(--on)':'white'):'var(--off)'}"><div class="pivot" style="top:-3px; background:inherit"></div><div class="pivot" style="bottom:-3px; background:inherit"></div></div>
-                        <div class="line-v" style="height:65px; top:60px; background:${(node.powered && node.state)?'var(--on)':'var(--off)'}"></div>
+                        <div class="line-v" style="height:65px; top:60px; background:${pOut}"></div>
                     </div>
                     <div class="mc-ui-right"><button class="btn-ctrl btn-on" onclick="controlMC('${node.id}', true)">ĐÓNG</button><button class="btn-ctrl btn-off" onclick="controlMC('${node.id}', false)">CẮT</button></div>
                 </div>`;
             } else if (node.type === 'mba') {
+                const pIn = node.powered ? 'var(--on)' : 'white';
+                const pOut = node.powered ? 'var(--on)' : 'var(--off)';
                 html = `<div style="margin-top:30px; position:relative; margin-left:10px">
                     <input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)">
-                    <div class="line-v" style="left:29px; height:30px; top:-30px; background:${node.powered?'var(--on)':'white'}"></div>
+                    <div class="line-v" style="left:29px; height:30px; top:-30px; background:${pIn}"></div>
                     <svg width="60" height="60"><circle cx="30" cy="20" r="18" stroke="${node.powered?'var(--on)':'var(--box)'}" stroke-width="2" fill="none"/><circle cx="30" cy="40" r="18" stroke="${node.powered?'var(--on)':'var(--box)'}" stroke-width="2" fill="none"/></svg>
-                    <div class="line-v" style="left:29px; height:40px; top:60px; background:${node.powered?'var(--on)':'var(--off)'}"></div>
+                    <div class="line-v" style="left:29px; height:40px; top:60px; background:${pOut}"></div>
                 </div>`;
             } else if (node.type === 'busbar') {
                 html = `<div class="busbar-container">
@@ -340,16 +333,21 @@
     }
 
     function getRMUHtml(node) {
+        // Màu thanh cái RMU: Có điện -> Đỏ, Không -> Xanh
+        const mainBusCol = node.powered ? 'var(--on)' : 'var(--off)';
         let h = `<div style="margin-top:30px; position:relative; margin-left:10px">
                     <input class="mc-label" style="left:${node.width-80}px" value="${node.label}" onchange="updateLabel('${node.id}', this.value)">
                     <div class="symbol-box" style="width:${node.width}px; height:145px">
-                    <div style="position:absolute; height:2px; width:80%; left:10%; top:20px; background:${node.powered?'var(--on)':'white'}"></div>`;
+                    <div style="position:absolute; height:2px; width:80%; left:10%; top:20px; background:${mainBusCol}"></div>`;
         for (let i = 0; i < node.states.length; i++) {
             let bx = 45 + (i * 70), s = node.states[i];
-            // Vị trí nút được tính toán căn giữa bay (bx - 20px)
-            h += `<div style="position:absolute; width:2px; height:15px; left:${bx-1}px; top:20px; background:${node.powered?'var(--on)':'white'}"></div>
-                  <div style="position:absolute; width:2px; height:25px; left:${bx-1}px; top:35px; background:${s?(node.powered?'var(--on)':'white'):'var(--off)'}; transform-origin: bottom center; transform:rotate(${s?0:35}deg)"><div class="pivot" style="top:-3px; background:inherit"></div><div class="pivot" style="bottom:-3px; background:inherit"></div></div>
-                  <div style="position:absolute; width:2px; height:75px; left:${bx-1}px; top:60px; background:${(node.powered && s)?'var(--on)':'var(--off)'}"></div>
+            // Logic màu: Chỉ đỏ khi Bus có điện VÀ Switch ĐÓNG
+            let activeCol = (node.powered && s) ? 'var(--on)' : 'var(--off)';
+            let armCol = s ? activeCol : 'var(--off)';
+            
+            h += `<div style="position:absolute; width:2px; height:15px; left:${bx-1}px; top:20px; background:${mainBusCol}"></div>
+                  <div style="position:absolute; width:2px; height:25px; left:${bx-1}px; top:35px; background:${armCol}; transform-origin: bottom center; transform:rotate(${s?0:35}deg)"><div class="pivot" style="top:-3px; background:inherit"></div><div class="pivot" style="bottom:-3px; background:inherit"></div></div>
+                  <div style="position:absolute; width:2px; height:75px; left:${bx-1}px; top:60px; background:${activeCol}"></div>
                   <div class="rmu-ctrl-box" style="left:${bx-20}px; top:85px">
                      <button class="btn-s" style="background:${s?'#b30000':'#444'}" onclick="controlMC_RMU('${node.id}', ${i}, true)">ON</button>
                      <button class="btn-s" style="background:${!s?'#006400':'#444'}" onclick="controlMC_RMU('${node.id}', ${i}, false)">OFF</button>
