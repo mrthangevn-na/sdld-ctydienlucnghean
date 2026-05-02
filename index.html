@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SLD Engineer Pro v7.0 - Cloud List & RMU Fixed</title>
+    <title>SLD Engineer Pro v7.5 - Cloud & Text Tool</title>
     
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
@@ -34,22 +33,24 @@
         .rmu-ctrl-box { position: absolute; display: flex; flex-direction: column; gap: 2px; z-index: 100; }
         .btn-s { padding: 2px; font-size: 9px; color: white; border: none; border-radius: 2px; cursor: pointer; min-width: 35px; border: 1px solid #000; }
 
-        /* UI Dự án */
+        /* Text Box Tool */
+        .text-box-container { border: 1px dashed #edca1a; display: flex; align-items: center; justify-content: center; background: rgba(237, 202, 26, 0.05); overflow: hidden; }
+        .text-box-input { background: transparent; border: none; color: white; width: 100%; height: 100%; text-align: center; outline: none; resize: none; overflow: hidden; display: flex; align-items: center; justify-content: center; font-family: inherit; }
+        .resize-handle { width: 10px; height: 10px; background: white; position: absolute; right: 0; bottom: 0; cursor: nwse-resize; z-index: 101; }
+
+        /* Project Modal */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; display: none; align-items: center; justify-content: center; }
         .modal-content { background: #222; border: 1px solid #444; width: 350px; border-radius: 10px; padding: 20px; max-height: 80%; display: flex; flex-direction: column; }
-        .modal-header { font-weight: bold; color: #edca1a; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; justify-content: space-between; }
-        .project-list { overflow-y: auto; flex: 1; }
-        .project-item { padding: 10px; background: #333; margin-bottom: 5px; border-radius: 4px; cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; }
-        .project-item:hover { background: #444; border-left: 3px solid var(--accent); }
+        .project-item { padding: 10px; background: #333; margin-bottom: 5px; border-radius: 4px; cursor: pointer; }
+        .project-item:hover { background: #444; }
 
-        /* Graphics MC & MBA */
+        /* Graphics */
         .mc-container { position: relative; margin-top: 30px; margin-left: 10px; }
         .mc-box { width: 50px; height: 90px; border: 2px solid var(--box); background: #000; position: relative; pointer-events: none; }
         .line-v { position: absolute; width: 2px; left: 24px; }
         .mc-arm { position: absolute; width: 2px; left: 24px; top: 25px; height: 35px; transform-origin: bottom center; transition: 0.3s; }
         .pivot { position: absolute; width: 6px; height: 6px; border: 1px solid #fff; border-radius: 50%; left: -3px; background: inherit; }
         .mc-label { position: absolute; left: 65px; top: -30px; background: transparent; border: 1px dashed #555; color: #edca1a; font-weight: bold; font-size: 13px; width: 120px; outline: none; padding: 2px; }
-        .mc-ui-right { position: absolute; left: 65px; top: 30px; display: flex; flex-direction: column; gap: 4px; }
         .btn-ctrl { padding: 4px 8px; font-size: 10px; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; color: white; min-width: 60px; }
         .btn-on { background: #b30000; } .btn-off { background: #006400; }
 
@@ -66,37 +67,34 @@
 </head>
 <body>
 
-<!-- Header -->
 <div class="header">
-    <h2 style="font-size:16px; color:#edca1a; margin:0">SLD ENGINEER PRO v7.0 CLOUD</h2>
+    <h2 style="font-size:16px; color:#edca1a; margin:0">SLD ENGINEER PRO v7.5</h2>
     <div class="top-btns">
-        <button onclick="undo()">↩ Undo</button>
+        <button onclick="undo()" style="background:#555">↩ Undo</button>
         <button onclick="clearCanvas()">Làm trắng</button>
         <button onclick="showProjectList()" style="background:#ffc107; color:black; font-weight:bold">MỞ DỰ ÁN</button>
         <button onclick="saveToCloud()" style="background:#28a745; font-weight:bold">LƯU ĐÁM MÂY</button>
     </div>
 </div>
 
-<!-- Modal Danh sách dự án -->
 <div id="projectModal" class="modal">
     <div class="modal-content">
-        <div class="modal-header">
+        <div style="font-weight:bold; color:#edca1a; margin-bottom:15px; display:flex; justify-content:space-between">
             <span>DANH SÁCH DỰ ÁN</span>
             <span style="cursor:pointer" onclick="closeModal()">✖</span>
         </div>
-        <div id="projectList" class="project-list">
-            <!-- Dòng dự án sẽ hiện ở đây -->
-        </div>
+        <div id="projectList" style="overflow-y:auto; flex:1"></div>
         <button style="margin-top:15px; background:#444" onclick="closeModal()">Đóng</button>
     </div>
 </div>
 
 <div class="main">
     <div class="sidebar">
-        <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'mc_tong')">Máy Cắt Tổng (MC T)</div>
+        <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'mc_tong')">Máy Cắt Tổng</div>
         <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'mc_feeder')">Máy Cắt Đường Dây</div>
-        <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'mba')">Máy Biến Áp (MBA)</div>
-        <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'busbar')">Thanh Cái (Busbar)</div>
+        <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'mba')">Máy Biến Áp</div>
+        <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'busbar')">Thanh Cái</div>
+        <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'text_box')" style="color:#edca1a; font-weight:bold">Ghi Chú Văn Bản</div>
         <div style="border-top:1px solid #444; margin:10px 0; padding-top:10px; color:#888; font-size:10px; text-align:center">HỆ THỐNG RMU</div>
         <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'rmu2')">RMU 2 Ngăn</div>
         <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'rmu3')">RMU 3 Ngăn</div>
@@ -113,7 +111,6 @@
 </div>
 
 <script>
-    // --- CẤU HÌNH FIREBASE ---
     const firebaseConfig = {
         apiKey: "AIzaSyC9aGNmyKDkHvqQg0CY9SfrmNrMhFQGSzo",
         authDomain: "my-sld-project.firebaseapp.com",
@@ -126,7 +123,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- BIẾN DỮ LIỆU ---
     const canvas = document.getElementById('canvas');
     const ws = document.getElementById('ws');
     const connLayer = document.getElementById('conn-layer');
@@ -137,50 +133,46 @@
     let draggingWire = null;
     const PASS = "123456";
 
-    // --- CHỨC NĂNG CLOUD TỐI ƯU ---
+    function pushHistory() {
+        const state = JSON.stringify(data);
+        if (history.length === 0 || history[history.length - 1] !== state) {
+            history.push(state);
+            if (history.length > 50) history.shift();
+        }
+    }
+
+    function undo() {
+        if (history.length <= 1) return;
+        history.pop();
+        data = JSON.parse(history[history.length - 1]);
+        render();
+    }
+
     function saveToCloud() {
-        const name = prompt("Nhập tên dự án mới để lưu:");
+        const name = prompt("Nhập tên dự án:");
         if (!name) return;
-        db.ref('projects/' + name).set(data).then(() => alert("Đã lưu dự án: " + name));
+        db.ref('projects/' + name).set(data).then(() => alert("Đã lưu!"));
     }
 
     function showProjectList() {
         const listDiv = document.getElementById('projectList');
-        listDiv.innerHTML = "<p style='text-align:center'>Đang tải danh sách...</p>";
+        listDiv.innerHTML = "Đang tải...";
         document.getElementById('projectModal').style.display = 'flex';
-
-        db.ref('projects').once('value', (snapshot) => {
+        db.ref('projects').once('value', (s) => {
             listDiv.innerHTML = "";
-            if (!snapshot.exists()) {
-                listDiv.innerHTML = "<p>Chưa có dự án nào.</p>";
-                return;
-            }
-            snapshot.forEach((child) => {
-                const name = child.key;
+            s.forEach((c) => {
                 const item = document.createElement('div');
-                item.className = 'project-item';
-                item.innerHTML = `📁 ${name}`;
-                item.onclick = () => loadProject(name);
+                item.className = 'project-item'; item.innerHTML = `📁 ${c.key}`;
+                item.onclick = () => {
+                    data = c.val(); render();
+                    pushHistory(); closeModal();
+                };
                 listDiv.appendChild(item);
             });
         });
     }
-
-    function loadProject(name) {
-        db.ref('projects/' + name).once('value', (s) => {
-            if (s.exists()) {
-                const d = s.val();
-                data = { nodes: d.nodes || [], wires: d.wires || [] };
-                render();
-                closeModal();
-                alert("Đã mở dự án: " + name);
-            }
-        });
-    }
-
     function closeModal() { document.getElementById('projectModal').style.display = 'none'; }
 
-    // --- LOGIC VẼ VÀ ĐIỀU KHIỂN ---
     function evDrag(ev, type) { ev.dataTransfer.setData("type", type); }
     canvas.ondragover = (e) => e.preventDefault();
     canvas.ondrop = (e) => {
@@ -189,19 +181,24 @@
         const rect = canvas.getBoundingClientRect();
         const x = e.clientX - rect.left + ws.scrollLeft;
         const y = e.clientY - rect.top + ws.scrollTop;
-        let width = 250, count = 2;
-        if (type === 'rmu2') width = 150;
-        else if (type === 'rmu3') { width = 220; count = 3; }
-        else if (type === 'rmu4') { width = 290; count = 4; }
-        else if (type === 'rmu5') { width = 360; count = 5; }
-        data.nodes.push({ id: 'n'+Date.now(), type, x, y, label: "", state: false, width, states: new Array(count).fill(false), powered: false });
+        
+        if (type === 'text_box') {
+            data.nodes.push({ id: 'n'+Date.now(), type, x, y, label: "Nhập văn bản...", width: 150, height: 50 });
+        } else {
+            let width = 250, count = 2;
+            if (type === 'rmu2') width = 160;
+            else if (type === 'rmu3') { width = 230; count = 3; }
+            else if (type === 'rmu4') { width = 300; count = 4; }
+            else if (type === 'rmu5') { width = 370; count = 5; }
+            data.nodes.push({ id: 'n'+Date.now(), type, x, y, label: "", state: false, width, states: new Array(count).fill(false), powered: false });
+        }
         pushHistory(); render();
     };
 
     function solvePower() {
         data.nodes.forEach(n => n.powered = false);
         data.nodes.forEach(n => { if (n.type === 'mc_tong' && !data.wires.some(w => w.to === n.id && w.toPort === 'top')) n.powered = true; });
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < 20; i++) {
             data.wires.forEach(w => {
                 const n1 = data.nodes.find(n => n.id === w.from), n2 = data.nodes.find(n => n.id === w.to);
                 if (!n1 || !n2) return;
@@ -234,21 +231,28 @@
             wrap.style.left = node.x + 'px'; wrap.style.top = node.y + 'px';
             
             let html = '';
-            if (node.type.startsWith('mc')) {
+            if (node.type === 'text_box') {
+                const fSize = Math.max(10, node.height * 0.4);
+                html = `<div class="text-box-container" style="width:${node.width}px; height:${node.height}px;">
+                            <textarea class="text-box-input" style="font-size:${fSize}px" onchange="updateLabel('${node.id}', this.value)">${node.label}</textarea>
+                            <div class="resize-handle" onmousedown="startResizeText(event, '${node.id}')"></div>
+                        </div>`;
+            } else if (node.type.startsWith('mc')) {
                 html = `<div class="mc-container">
                     <input class="mc-label" placeholder="Tên MC..." value="${node.label}" onchange="updateLabel('${node.id}', this.value)">
                     <div class="mc-box">
                         <div class="line-v" style="height:56px; top:-31px; background:${node.powered?'var(--on)':'white'}"></div>
-                        <div class="mc-arm" style="transform:rotate(${node.state?0:35}deg); background:${node.state?(node.powered?'var(--on)':'white'):'var(--off)'}">
-                            <div class="pivot" style="top:-3px; background:inherit"></div><div class="pivot" style="bottom:-3px; background:inherit"></div>
-                        </div>
+                        <div class="mc-arm" style="transform:rotate(${node.state?0:35}deg); background:${node.state?(node.powered?'var(--on)':'white'):'var(--off)'}"><div class="pivot" style="top:-3px; background:inherit"></div><div class="pivot" style="bottom:-3px; background:inherit"></div></div>
                         <div class="line-v" style="height:65px; top:60px; background:${(node.powered && node.state)?'var(--on)':'var(--off)'}"></div>
                     </div>
-                    <div class="mc-ui-right"><button class="btn-ctrl btn-on" onclick="controlMC('${node.id}', true)">ĐÓNG</button><button class="btn-ctrl btn-off" onclick="controlMC('${node.id}', false)">CẮT</button></div>
+                    <div style="position:absolute; left:65px; top:30px; display:flex; flex-direction:column; gap:4px">
+                        <button class="btn-ctrl btn-on" onclick="controlMC('${node.id}', true)">ĐÓNG</button>
+                        <button class="btn-ctrl btn-off" onclick="controlMC('${node.id}', false)">CẮT</button>
+                    </div>
                 </div>`;
             } else if (node.type === 'mba') {
                 html = `<div style="margin-top:30px; position:relative; margin-left:10px">
-                    <input class="mc-label" placeholder="Tên MBA..." value="${node.label}" onchange="updateLabel('${node.id}', this.value)">
+                    <input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)">
                     <div class="line-v" style="left:29px; height:30px; top:-30px; background:${node.powered?'var(--on)':'white'}"></div>
                     <svg width="60" height="60"><circle cx="30" cy="20" r="18" stroke="${node.powered?'var(--on)':'var(--box)'}" stroke-width="2" fill="none"/><circle cx="30" cy="40" r="18" stroke="${node.powered?'var(--on)':'var(--box)'}" stroke-width="2" fill="none"/></svg>
                     <div class="line-v" style="left:29px; height:40px; top:60px; background:${node.powered?'var(--on)':'var(--off)'}"></div>
@@ -270,7 +274,7 @@
 
             if (node.type.startsWith('mc')) { createPort(wrap, node, 35, 0, 'top'); createPort(wrap, node, 35, 155, 'bottom'); }
             else if (node.type === 'mba') { createPort(wrap, node, 40, 0, 'top'); createPort(wrap, node, 40, 130, 'bottom'); }
-            else if (node.type.startsWith('rmu')) { for (let i = 0; i < node.states.length; i++) createPort(wrap, node, 40 + (i * 70) + 10, 145, 'bay_'+i); }
+            else if (node.type.startsWith('rmu')) { for (let i = 0; i < node.states.length; i++) createPort(wrap, node, 45 + (i * 70) + 10, 155, 'bay_'+i); }
 
             makeDraggable(wrap, node);
             canvas.appendChild(wrap);
@@ -278,20 +282,19 @@
         renderWires();
     }
 
-    // RMU VỚI NÚT ĐIỀU KHIỂN DỜI SANG TRÁI (bx - 48)
     function getRMUHtml(node) {
         let h = `<div style="margin-top:30px; position:relative; margin-left:10px">
-                    <input class="mc-label" style="left:${node.width-80}px" placeholder="Tên RMU..." value="${node.label}" onchange="updateLabel('${node.id}', this.value)">
-                    <div class="symbol-box" style="width:${node.width}px; height:110px">
+                    <input class="mc-label" style="left:${node.width-80}px" value="${node.label}" onchange="updateLabel('${node.id}', this.value)">
+                    <div class="symbol-box" style="width:${node.width}px; height:125px">
                     <div style="position:absolute; height:2px; width:80%; left:10%; top:20px; background:${node.powered?'var(--on)':'white'}"></div>`;
         for (let i = 0; i < node.states.length; i++) {
-            let bx = 40 + (i * 70), s = node.states[i];
+            let bx = 45 + (i * 70), s = node.states[i];
             let botCol = (node.powered && s) ? 'var(--on)' : 'var(--off)';
             let armCol = s ? (node.powered ? 'var(--on)' : 'white') : 'var(--off)';
             h += `<div style="position:absolute; width:2px; height:15px; left:${bx-1}px; top:20px; background:${node.powered?'var(--on)':'white'}"></div>
                   <div style="position:absolute; width:2px; height:25px; left:${bx-1}px; top:35px; background:${armCol}; transform-origin: bottom center; transform:rotate(${s?0:35}deg)"><div class="pivot" style="top:-3px; background:inherit"></div><div class="pivot" style="bottom:-3px; background:inherit"></div></div>
-                  <div style="position:absolute; width:2px; height:50px; left:${bx-1}px; top:60px; background:${botCol}"></div>
-                  <div class="rmu-ctrl-box" style="left:${bx-48}px; top:70px">
+                  <div style="position:absolute; width:2px; height:55px; left:${bx-1}px; top:60px; background:${botCol}"></div>
+                  <div class="rmu-ctrl-box" style="left:${bx-50}px; top:75px">
                      <button class="btn-s" style="background:${s?'#b30000':'#444'}" onclick="controlRMU('${node.id}', ${i}, true)">ON</button>
                      <button class="btn-s" style="background:${!s?'#006400':'#444'}" onclick="controlRMU('${node.id}', ${i}, false)">OFF</button>
                   </div>`;
@@ -352,15 +355,25 @@
     function deleteNode(id) { if(confirm("Xóa?")) { data.nodes = data.nodes.filter(n=>n.id!==id); data.wires=data.wires.filter(w=>w.from!==id&&w.to!==id); pushHistory(); render(); } }
     function deleteWire(i) { data.wires.splice(i,1); pushHistory(); render(); }
     function updateLabel(id, v) { data.nodes.find(n=>n.id===id).label = v; pushHistory(); }
-    function pushHistory() { history.push(JSON.stringify(data)); if(history.length>30) history.shift(); }
-    function undo() { if(history.length<=1) return; history.pop(); data=JSON.parse(history[history.length-1]); render(); }
     function clearCanvas() { if(confirm("Xóa sạch?")) { data={nodes:[], wires:[]}; pushHistory(); render(); } }
     function deselectAll() { selectedPort=null; ghostPath.style.display='none'; }
+    
     function startResizeBus(e, id) { e.stopPropagation(); const n = data.nodes.find(n=>n.id===id); let sx=e.clientX, sw=n.width; document.onmousemove=(ev)=>{n.width=Math.max(50, sw+(ev.clientX-sx)); render();}; document.onmouseup=()=>{document.onmousemove=null; pushHistory();}; }
     
+    function startResizeText(e, id) {
+        e.stopPropagation(); const n = data.nodes.find(n=>n.id===id);
+        let sx=e.clientX, sy=e.clientY, sw=n.width, sh=n.height;
+        document.onmousemove=(ev)=>{
+            n.width=Math.max(50, sw+(ev.clientX-sx));
+            n.height=Math.max(30, sh+(ev.clientY-sy));
+            render();
+        };
+        document.onmouseup=()=>{document.onmousemove=null; pushHistory();};
+    }
+
     function makeDraggable(el, node) {
         let ox, oy; el.onmousedown=(e)=>{
-            if(e.target.tagName==='INPUT'||e.target.classList.contains('port')||e.target.classList.contains('btn-s')) return;
+            if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.classList.contains('port')||e.target.classList.contains('btn-s')||e.target.classList.contains('resize-handle')) return;
             ox=e.clientX; oy=e.clientY; document.onmousemove=(ev)=>{
                 node.x+=ev.clientX-ox; node.y+=ev.clientY-oy; ox=ev.clientX; oy=ev.clientY;
                 el.style.left=node.x+'px'; el.style.top=node.y+'px'; renderWires();
