@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SLD Engineer Pro v7.6 - Smart Save & Text Tool</title>
+    <title>SLD Engineer Pro v7.7 - Grid Snapping & Search</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -13,16 +13,21 @@
         body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
 
         .header { height: 50px; background: var(--panel); display: flex; align-items: center; padding: 0 15px; border-bottom: 1px solid #333; justify-content: space-between; z-index: 100; position: relative; }
-        .top-btns { display: flex; gap: 8px; }
+        .top-btns { display: flex; gap: 8px; align-items: center; }
         button { background: #333; color: white; border: 1px solid #555; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-size: 12px; transition: 0.2s; }
         button:hover { background: var(--accent); }
 
         .main { display: flex; height: calc(100% - 50px); }
-        .sidebar { width: 200px; background: var(--panel); border-right: 1px solid #333; padding: 15px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
-        .tool-item { background: #2d2d2d; border: 1px solid #444; padding: 12px; border-radius: 6px; cursor: grab; text-align: center; font-size: 11px; user-select: none; }
+        .sidebar { width: 180px; background: var(--panel); border-right: 1px solid #333; padding: 15px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+        .tool-item { background: #2d2d2d; border: 1px solid #444; padding: 10px; border-radius: 6px; cursor: grab; text-align: center; font-size: 11px; user-select: none; }
         .tool-item:hover { border-color: var(--accent); background: #383838; }
 
         .workspace { flex: 1; position: relative; overflow: auto; background-image: radial-gradient(#222 1px, transparent 1px); background-size: 20px 20px; }
+        .workspace.grid-active { background-image: 
+            linear-gradient(to right, #222 1px, transparent 1px),
+            linear-gradient(to bottom, #222 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
         #canvas { width: 3000px; height: 2000px; position: relative; }
 
         /* Objects */
@@ -41,16 +46,13 @@
 
         /* Project Modals */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; display: none; align-items: center; justify-content: center; }
-        .modal-content { background: #1a1a1a; border: 1px solid #444; width: 380px; border-radius: 10px; padding: 20px; max-height: 85%; display: flex; flex-direction: column; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
-        .modal-title { font-weight: bold; color: #edca1a; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; justify-content: space-between; font-size: 14px; }
-        .project-list { overflow-y: auto; flex: 1; margin-top: 10px; }
-        .project-item { padding: 12px; background: #2a2a2a; margin-bottom: 6px; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #444; }
-        .project-item:hover { background: #333; border-left-color: var(--accent); }
-        .btn-overwrite { font-size: 10px; background: #4a90e2; padding: 4px 8px; border-radius: 3px; border: none; }
+        .modal-content { background: #1a1a1a; border: 1px solid #444; width: 400px; border-radius: 10px; padding: 20px; max-height: 85%; display: flex; flex-direction: column; }
+        .modal-title { font-weight: bold; color: #edca1a; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; justify-content: space-between; }
+        .project-list { overflow-y: auto; flex: 1; }
+        .project-item { padding: 12px; background: #2a2a2a; margin-bottom: 6px; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .project-item:hover { background: #333; color: var(--accent); }
         
-        .save-input-group { display: flex; gap: 5px; margin-bottom: 15px; }
-        .save-input { flex: 1; background: #000; border: 1px solid #555; color: #fff; padding: 8px; border-radius: 4px; outline: none; font-size: 13px; }
-        .save-input:focus { border-color: var(--accent); }
+        .search-input { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 4px; margin-bottom: 10px; outline: none; }
 
         /* Graphics */
         .mc-container { position: relative; margin-top: 30px; margin-left: 10px; }
@@ -76,30 +78,29 @@
 <body>
 
 <div class="header">
-    <h2 style="font-size:16px; color:#edca1a; margin:0">SLD ENGINEER PRO v7.6</h2>
+    <h2 style="font-size:16px; color:#edca1a; margin:0">SLD ENGINEER PRO v7.7</h2>
     <div class="top-btns">
-        <button onclick="undo()" style="background:#555">↩ Undo</button>
+        <div style="font-size:11px; display:flex; align-items:center; gap:5px; margin-right:10px">
+            <input type="checkbox" id="gridToggle" onchange="toggleGrid()"> Bám lưới (Snap)
+        </div>
+        <button onclick="undo()">↩ Undo</button>
         <button onclick="clearCanvas()">Làm trắng</button>
         <button onclick="openModal('load')" style="background:#ffc107; color:black; font-weight:bold">MỞ DỰ ÁN</button>
         <button onclick="openModal('save')" style="background:#28a745; font-weight:bold">LƯU ĐÁM MÂY</button>
     </div>
 </div>
 
-<!-- Modal chung cho Mở và Lưu -->
 <div id="projectModal" class="modal">
     <div class="modal-content">
         <div class="modal-title">
             <span id="modalTitleText">DANH SÁCH DỰ ÁN</span>
             <span style="cursor:pointer" onclick="closeModal()">✖</span>
         </div>
-        
-        <!-- Phần Lưu mới (Chỉ hiện khi nhấn Lưu) -->
-        <div id="saveNewGroup" class="save-input-group">
-            <input type="text" id="newProjectName" class="save-input" placeholder="Tên dự án mới...">
-            <button onclick="confirmSaveNew()" style="background:#28a745; border:none; padding:8px 15px">Lưu mới</button>
+        <input type="text" id="projectSearch" class="search-input" placeholder="Tìm kiếm tên dự án..." oninput="filterProjects()">
+        <div id="saveNewGroup" style="display:none; gap:5px; margin-bottom:10px">
+            <input type="text" id="newProjectName" class="search-input" style="margin:0" placeholder="Tên dự án mới...">
+            <button onclick="confirmSaveNew()" style="background:#28a745">Lưu mới</button>
         </div>
-
-        <div style="font-size: 11px; color: #888; margin-bottom: 5px;" id="modalInstruction">Chọn dự án bên dưới để thao tác:</div>
         <div id="projectList" class="project-list"></div>
         <button style="margin-top:15px; background:#444" onclick="closeModal()">Đóng</button>
     </div>
@@ -111,8 +112,8 @@
         <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'mc_feeder')">Máy Cắt Đường Dây</div>
         <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'mba')">Máy Biến Áp</div>
         <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'busbar')">Thanh Cái</div>
-        <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'text_box')" style="color:#edca1a; font-weight:bold">Ghi Chú Văn Bản</div>
-        <div style="border-top:1px solid #444; margin:10px 0; padding-top:10px; color:#888; font-size:10px; text-align:center">HỆ THỐNG RMU</div>
+        <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'text_box')" style="color:#edca1a; font-weight:bold">Ô Ghi Chú</div>
+        <div style="border-top:1px solid #444; margin:5px 0; padding-top:5px; color:#888; font-size:10px; text-align:center">RMU</div>
         <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'rmu2')">RMU 2 Ngăn</div>
         <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'rmu3')">RMU 3 Ngăn</div>
         <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'rmu4')">RMU 4 Ngăn</div>
@@ -148,83 +149,79 @@
     let history = [];
     let selectedPort = null;
     let draggingWire = null;
-    const PASS = "123456";
+    let gridEnabled = false;
+    let allProjectNames = [];
 
-    // --- QUẢN LÝ DỰ ÁN THÔNG MINH ---
-    let modalMode = 'load'; // 'load' hoặc 'save'
+    // --- GRID SNAP LOGIC ---
+    function toggleGrid() {
+        gridEnabled = document.getElementById('gridToggle').checked;
+        ws.classList.toggle('grid-active', gridEnabled);
+    }
+    function snap(val) { return gridEnabled ? Math.round(val / 20) * 20 : val; }
 
+    // --- PHÍM TẮT ---
+    window.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+        if (e.ctrlKey && e.key === 's') { e.preventDefault(); openModal('save'); }
+    });
+
+    // --- QUẢN LÝ CLOUD ---
     function openModal(mode) {
-        modalMode = mode;
         const modal = document.getElementById('projectModal');
-        const listDiv = document.getElementById('projectList');
-        const title = document.getElementById('modalTitleText');
         const saveGroup = document.getElementById('saveNewGroup');
-        const instruct = document.getElementById('modalInstruction');
-
+        const title = document.getElementById('modalTitleText');
         modal.style.display = 'flex';
-        listDiv.innerHTML = "Đang tải...";
-        
-        if (mode === 'save') {
-            title.innerText = "LƯU DỰ ÁN LÊN ĐÁM MÂY";
-            saveGroup.style.display = 'flex';
-            instruct.innerText = "Hoặc chọn một dự án cũ để GHI ĐÈ:";
-        } else {
-            title.innerText = "MỞ DỰ ÁN TỪ ĐÁM MÂY";
-            saveGroup.style.display = 'none';
-            instruct.innerText = "Chọn một dự án để mở bản vẽ:";
-        }
+        saveGroup.style.display = (mode === 'save' ? 'flex' : 'none');
+        title.innerText = (mode === 'save' ? "LƯU DỰ ÁN" : "MỞ DỰ ÁN");
+        fetchProjects();
+    }
 
-        db.ref('projects').once('value', (s) => {
-            listDiv.innerHTML = "";
-            if (!s.exists()) { listDiv.innerHTML = "Chưa có dữ liệu."; return; }
-            s.forEach((child) => {
-                const name = child.key;
-                const item = document.createElement('div');
-                item.className = 'project-item';
-                item.innerHTML = `<span>📁 ${name}</span> ${mode==='save'?'<button class="btn-overwrite">GHI ĐÈ</button>':''}`;
-                item.onclick = () => {
-                    if (mode === 'save') confirmOverwrite(name);
-                    else loadProject(name);
-                };
-                listDiv.appendChild(item);
-            });
+    function fetchProjects() {
+        const listDiv = document.getElementById('projectList');
+        listDiv.innerHTML = "Đang tải...";
+        db.ref('projects').once('value', s => {
+            allProjectNames = [];
+            if (s.exists()) s.forEach(c => allProjectNames.push(c.key));
+            filterProjects();
+        });
+    }
+
+    function filterProjects() {
+        const query = document.getElementById('projectSearch').value.toLowerCase();
+        const listDiv = document.getElementById('projectList');
+        listDiv.innerHTML = "";
+        allProjectNames.filter(n => n.toLowerCase().includes(query)).forEach(name => {
+            const item = document.createElement('div');
+            item.className = 'project-item';
+            item.innerHTML = `<span>📁 ${name}</span> ${document.getElementById('modalTitleText').innerText.includes('LƯU') ? '<button style="background:#4a90e2; font-size:10px">GHI ĐÈ</button>' : ''}`;
+            item.onclick = () => {
+                if (document.getElementById('modalTitleText').innerText.includes('LƯU')) {
+                    if(confirm("Ghi đè dự án này?")) saveData(name);
+                } else loadProject(name);
+            };
+            listDiv.appendChild(item);
         });
     }
 
     function confirmSaveNew() {
         const name = document.getElementById('newProjectName').value.trim();
-        if (!name) { alert("Vui lòng nhập tên!"); return; }
-        saveData(name, false);
+        if (name) saveData(name);
     }
 
-    function confirmOverwrite(name) {
-        if (confirm(`Bạn có chắc chắn muốn GHI ĐÈ lên dự án "${name}" không? Dữ liệu cũ sẽ bị mất.`)) {
-            saveData(name, true);
-        }
-    }
-
-    function saveData(name, isOverwrite) {
-        db.ref('projects/' + name).set(data).then(() => {
-            alert(isOverwrite ? "Đã ghi đè thành công!" : "Đã lưu dự án mới thành công!");
-            closeModal();
-            document.getElementById('newProjectName').value = "";
-        });
+    function saveData(name) {
+        db.ref('projects/' + name).set(data).then(() => { alert("Đã lưu!"); closeModal(); });
     }
 
     function loadProject(name) {
-        db.ref('projects/' + name).once('value', (s) => {
-            if (s.exists()) {
-                data = s.val(); 
-                if (!data.wires) data.wires = [];
-                render(); pushHistory(); closeModal();
-                alert("Đã mở dự án: " + name);
-            }
+        db.ref('projects/' + name).once('value', s => {
+            data = s.val(); if(!data.wires) data.wires=[];
+            render(); pushHistory(); closeModal();
         });
     }
 
     function closeModal() { document.getElementById('projectModal').style.display = 'none'; }
 
-    // --- LOGIC HỆ THỐNG ---
+    // --- LOGIC HỆ THỐNG VẼ ---
     function pushHistory() {
         const state = JSON.stringify(data);
         if (history.length === 0 || history[history.length - 1] !== state) {
@@ -246,11 +243,11 @@
         e.preventDefault();
         const type = e.dataTransfer.getData("type");
         const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left + ws.scrollLeft;
-        const y = e.clientY - rect.top + ws.scrollTop;
+        const x = snap(e.clientX - rect.left + ws.scrollLeft);
+        const y = snap(e.clientY - rect.top + ws.scrollTop);
         
         if (type === 'text_box') {
-            data.nodes.push({ id: 'n'+Date.now(), type, x, y, label: "Nhập văn bản...", width: 150, height: 50 });
+            data.nodes.push({ id: 'n'+Date.now(), type, x, y, label: "Nhập chữ...", width: 150, height: 50 });
         } else {
             let width = 250, count = 2;
             if (type === 'rmu2') width = 160;
@@ -299,9 +296,8 @@
             
             let html = '';
             if (node.type === 'text_box') {
-                const fSize = Math.max(10, node.height * 0.4);
                 html = `<div class="text-box-container" style="width:${node.width}px; height:${node.height}px;">
-                            <textarea class="text-box-input" style="font-size:${fSize}px" onchange="updateLabel('${node.id}', this.value)">${node.label}</textarea>
+                            <textarea class="text-box-input" style="font-size:${Math.max(10, node.height*0.4)}px" onchange="updateLabel('${node.id}', this.value)">${node.label}</textarea>
                             <div class="resize-handle" onmousedown="startResizeText(event, '${node.id}')"></div>
                         </div>`;
             } else if (node.type.startsWith('mc')) {
@@ -356,11 +352,9 @@
                     <div style="position:absolute; height:2px; width:80%; left:10%; top:20px; background:${node.powered?'var(--on)':'white'}"></div>`;
         for (let i = 0; i < node.states.length; i++) {
             let bx = 45 + (i * 70), s = node.states[i];
-            let botCol = (node.powered && s) ? 'var(--on)' : 'var(--off)';
-            let armCol = s ? (node.powered ? 'var(--on)' : 'white') : 'var(--off)';
             h += `<div style="position:absolute; width:2px; height:15px; left:${bx-1}px; top:20px; background:${node.powered?'var(--on)':'white'}"></div>
-                  <div style="position:absolute; width:2px; height:25px; left:${bx-1}px; top:35px; background:${armCol}; transform-origin: bottom center; transform:rotate(${s?0:35}deg)"><div class="pivot" style="top:-3px; background:inherit"></div><div class="pivot" style="bottom:-3px; background:inherit"></div></div>
-                  <div style="position:absolute; width:2px; height:55px; left:${bx-1}px; top:60px; background:${botCol}"></div>
+                  <div style="position:absolute; width:2px; height:25px; left:${bx-1}px; top:35px; background:${s?(node.powered?'var(--on)':'white'):'var(--off)'}; transform-origin: bottom center; transform:rotate(${s?0:35}deg)"><div class="pivot" style="top:-3px; background:inherit"></div><div class="pivot" style="bottom:-3px; background:inherit"></div></div>
+                  <div style="position:absolute; width:2px; height:55px; left:${bx-1}px; top:60px; background:${(node.powered && s)?'var(--on)':'var(--off)'}"></div>
                   <div class="rmu-ctrl-box" style="left:${bx-50}px; top:75px">
                      <button class="btn-s" style="background:${s?'#b30000':'#444'}" onclick="controlRMU('${node.id}', ${i}, true)">ON</button>
                      <button class="btn-s" style="background:${!s?'#006400':'#444'}" onclick="controlRMU('${node.id}', ${i}, false)">OFF</button>
@@ -381,7 +375,7 @@
         if (!selectedPort) { selectedPort = { id, portName, relX, relY, absPos }; ghostPath.style.display = 'block'; }
         else {
             if (selectedPort.id !== id) {
-                data.wires.push({ from: selectedPort.id, fromPort: selectedPort.portName, fRel: {x:selectedPort.relX, y:selectedPort.relY}, to: id, toPort: portName, tRel: {x:relX, y:relY}, midY: (selectedPort.absPos.y + absPos.y)/2 + 20, label: "" });
+                data.wires.push({ from: selectedPort.id, fromPort: selectedPort.portName, fRel: {x:selectedPort.relX, y:selectedPort.relY}, to: id, toPort: portName, tRel: {x:relX, y:relY}, midY: snap((selectedPort.absPos.y + absPos.y)/2 + 20) });
                 pushHistory();
             }
             selectedPort = null; ghostPath.style.display = 'none'; render();
@@ -390,9 +384,9 @@
 
     function onBusClick(id, e) {
         const node = data.nodes.find(n => n.id === id);
-        const relX = e.clientX - e.currentTarget.getBoundingClientRect().left;
+        const relX = snap(e.clientX - e.currentTarget.getBoundingClientRect().left);
         if (!selectedPort) { selectedPort = { id, portName: 'bus', relX, relY: 44, absPos: {x:node.x+relX, y:node.y+44} }; ghostPath.style.display = 'block'; }
-        else { data.wires.push({ from: selectedPort.id, fromPort: selectedPort.portName, fRel: {x:selectedPort.relX, y:selectedPort.relY}, to: id, toPort: 'bus', tRel: {x:relX, y:44}, midY: (selectedPort.absPos.y + node.y + 44)/2 + 10 }); pushHistory(); selectedPort = null; ghostPath.style.display = 'none'; render(); }
+        else { data.wires.push({ from: selectedPort.id, fromPort: selectedPort.portName, fRel: {x:selectedPort.relX, y:selectedPort.relY}, to: id, toPort: 'bus', tRel: {x:relX, y:44}, midY: snap((selectedPort.absPos.y + node.y + 44)/2 + 10) }); pushHistory(); selectedPort = null; ghostPath.style.display = 'none'; render(); }
     }
 
     function renderWires() {
@@ -411,35 +405,32 @@
     }
 
     canvas.onmousemove = (e) => {
-        const r = canvas.getBoundingClientRect(); const mx = e.clientX - r.left + ws.scrollLeft, my = e.clientY - r.top + ws.scrollTop;
+        const r = canvas.getBoundingClientRect(); const mx = snap(e.clientX - r.left + ws.scrollLeft), my = snap(e.clientY - r.top + ws.scrollTop);
         if (selectedPort) ghostPath.setAttribute('d', `M ${selectedPort.absPos.x} ${selectedPort.absPos.y} V ${my} H ${mx} V ${my}`);
         if (draggingWire !== null) { data.wires[draggingWire].midY = my; renderWires(); }
     };
     canvas.onmouseup = () => { if(draggingWire!==null){ draggingWire=null; pushHistory(); } };
 
-    function controlMC(id, v) { if (prompt("Mật khẩu:") === PASS) { data.nodes.find(n=>n.id===id).state = v; pushHistory(); render(); } }
-    function controlRMU(id, b, v) { if (prompt("Mật khẩu:") === PASS) { data.nodes.find(n=>n.id===id).states[b] = v; pushHistory(); render(); } }
+    function controlMC(id, v) { if (prompt("Mật khẩu:") === "123456") { data.nodes.find(n=>n.id===id).state = v; pushHistory(); render(); } }
+    function controlRMU(id, b, v) { if (prompt("Mật khẩu:") === "123456") { data.nodes.find(n=>n.id===id).states[b] = v; pushHistory(); render(); } }
     function deleteNode(id) { if(confirm("Xóa?")) { data.nodes = data.nodes.filter(n=>n.id!==id); data.wires=data.wires.filter(w=>w.from!==id&&w.to!==id); pushHistory(); render(); } }
     function deleteWire(i) { data.wires.splice(i,1); pushHistory(); render(); }
     function updateLabel(id, v) { data.nodes.find(n=>n.id===id).label = v; pushHistory(); }
-    function clearCanvas() { if(confirm("Xóa sạch?")) { data={nodes:[], wires:[]}; pushHistory(); render(); } }
+    function clearCanvas() { if(confirm("Xóa hết?")) { data={nodes:[], wires:[]}; pushHistory(); render(); } }
     function deselectAll() { selectedPort=null; ghostPath.style.display='none'; }
-    function startResizeBus(e, id) { e.stopPropagation(); const n = data.nodes.find(n=>n.id===id); let sx=e.clientX, sw=n.width; document.onmousemove=(ev)=>{n.width=Math.max(50, sw+(ev.clientX-sx)); render();}; document.onmouseup=()=>{document.onmousemove=null; pushHistory();}; }
+    
+    function startResizeBus(e, id) { e.stopPropagation(); const n = data.nodes.find(n=>n.id===id); let sx=e.clientX, sw=n.width; document.onmousemove=(ev)=>{n.width=snap(Math.max(50, sw+(ev.clientX-sx))); render();}; document.onmouseup=()=>{document.onmousemove=null; pushHistory();}; }
     function startResizeText(e, id) {
         e.stopPropagation(); const n = data.nodes.find(n=>n.id===id);
         let sx=e.clientX, sy=e.clientY, sw=n.width, sh=n.height;
-        document.onmousemove=(ev)=>{
-            n.width=Math.max(50, sw+(ev.clientX-sx));
-            n.height=Math.max(30, sh+(ev.clientY-sy));
-            render();
-        };
+        document.onmousemove=(ev)=>{ n.width=snap(Math.max(50, sw+(ev.clientX-sx))); n.height=snap(Math.max(30, sh+(ev.clientY-sy))); render(); };
         document.onmouseup=()=>{document.onmousemove=null; pushHistory();};
     }
     function makeDraggable(el, node) {
         let ox, oy; el.onmousedown=(e)=>{
             if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.classList.contains('port')||e.target.classList.contains('btn-s')||e.target.classList.contains('resize-handle')) return;
             ox=e.clientX; oy=e.clientY; document.onmousemove=(ev)=>{
-                node.x+=ev.clientX-ox; node.y+=ev.clientY-oy; ox=ev.clientX; oy=ev.clientY;
+                node.x=snap(node.x+(ev.clientX-ox)); node.y=snap(node.y+(ev.clientY-oy)); ox=ev.clientX; oy=ev.clientY;
                 el.style.left=node.x+'px'; el.style.top=node.y+'px'; renderWires();
             }; document.onmouseup=()=>{document.onmousemove=null; pushHistory();};
         };
