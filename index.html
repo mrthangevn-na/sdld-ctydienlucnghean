@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SLD Engineer Pro v9.0 - RMU Power Logic Fixed</title>
+    <title>SLD Engineer Pro v9.4 - Dynamic Busbar Snapping</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -34,7 +34,7 @@
         .delete-btn { position: absolute; top: -20px; left: -10px; color: white; background: #ff4444; cursor: pointer; font-weight: bold; border-radius: 50%; width: 22px; height: 22px; text-align: center; line-height: 20px; border: 2px solid #fff; display: none; z-index: 100; }
         .obj-wrap:hover .delete-btn { display: block; }
 
-        /* Graphics */
+        /* Symbols */
         .mc-container { position: relative; margin-top: 30px; margin-left: 10px; }
         .mc-box { width: 50px; height: 90px; border: 2px solid var(--box); background: #000; position: relative; pointer-events: none; }
         .line-v { position: absolute; width: 2px; left: 24px; }
@@ -51,13 +51,14 @@
 
         /* Wires */
         svg.conn-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
-        .wire-path { stroke: var(--off); stroke-width: 5; fill: none; pointer-events: stroke; cursor: ns-resize; }
-        .wire-path.powered { stroke: var(--on); }
+        .wire-path { stroke: var(--off); stroke-width: 5; fill: none; pointer-events: stroke; cursor: ns-resize; transition: stroke 0.2s; }
+        .wire-path.powered { stroke: var(--on) !important; }
 
         /* Port & Busbar */
         .port { width: 14px; height: 14px; background: #edca1a; border-radius: 50%; position: absolute; cursor: crosshair; z-index: 50; border: 2px solid #000; transform: translate(-50%, -50%); }
-        .busbar-line { height: 8px; background: var(--off); border-radius: 4px; cursor: pointer; min-width: 50px; }
-        .bus-handle { width: 10px; height: 20px; background: #fff; position: absolute; right: 0; top: 34px; cursor: ew-resize; z-index: 20; border-radius: 2px; }
+        .busbar-container { position: relative; padding-top: 40px; pointer-events: none; }
+        .busbar-line { height: 12px; background: var(--off); border-radius: 6px; cursor: crosshair; min-width: 50px; pointer-events: auto; }
+        .bus-handle { width: 8px; height: 20px; background: #fff; position: absolute; right: -4px; top: 36px; cursor: ew-resize; z-index: 20; border-radius: 2px; pointer-events: auto; border: 1px solid #000; }
 
         /* Modals */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: center; justify-content: center; }
@@ -135,6 +136,7 @@
 </div>
 
 <script>
+    // --- FIREBASE CONFIG (Giữ nguyên của bạn) ---
     const firebaseConfig = {
         apiKey: "AIzaSyC9aGNmyKDkHvqQg0CY9SfrmNrMhFQGSzo",
         authDomain: "my-sld-project.firebaseapp.com",
@@ -160,9 +162,9 @@
     const connLayer = document.getElementById('conn-layer');
     const ghostPath = document.getElementById('ghost-path');
 
-    // --- FILE ---
-    function handleNew() { if(data.nodes.length > 0 && confirm("Lưu trước khi tạo mới?")) openSaveModal(() => resetB()); else resetB(); }
-    function resetB() { let n = prompt("Tên dự án:"); if(!n) return; data={nodes:[],wires:[]}; selectedProjectName=n; document.getElementById('displayProjectName').innerText=n.toUpperCase(); render(); pushHistory(); }
+    // --- FILE MGMT ---
+    function handleNew() { if(data.nodes.length > 0 && confirm("Lưu dự án hiện tại trước khi tạo mới?")) openSaveModal(() => resetB()); else resetB(); }
+    function resetB() { let n = prompt("Tên dự án mới:"); if(!n) return; data={nodes:[],wires:[]}; selectedProjectName=n; document.getElementById('displayProjectName').innerText=n.toUpperCase(); render(); pushHistory(); }
     function handleSave() { if(!selectedProjectName) openSaveModal(); else db.ref('projects/'+selectedProjectName).set(data).then(()=>alert("Đã lưu!")); }
     function openOpenModal() { document.getElementById('openModal').style.display='flex'; fetchP('openList', (n)=>nameInList=n); }
     function confirmOpen() { if(!nameInList) return; db.ref('projects/'+nameInList).once('value', s => { data=s.val()||{nodes:[],wires:[]}; if(!data.wires) data.wires=[]; selectedProjectName=nameInList; document.getElementById('displayProjectName').innerText=selectedProjectName.toUpperCase(); render(); pushHistory(); closeModal('openModal'); }); }
@@ -171,15 +173,14 @@
     function fetchP(cid, onS) { const div=document.getElementById(cid); div.innerHTML="..."; db.ref('projects').once('value', s => { div.innerHTML=""; if(s.exists()) s.forEach(c => { const i=document.createElement('div'); i.className='project-item'; i.innerText="📁 "+c.key; i.onclick=()=>{ Array.from(div.children).forEach(e=>e.classList.remove('selected')); i.classList.add('selected'); onS(c.key); }; div.appendChild(i); }); }); }
     function closeModal(id) { document.getElementById(id).style.display='none'; }
 
-    // --- LOGIC ---
+    // --- CORE LOGIC ---
     function snap(v) { return document.getElementById('gridToggle').checked ? Math.round(v/20)*20 : v; }
     function changeZoom(d) { currentZoom = Math.min(Math.max(0.3, currentZoom+d), 2.5); canvasContainer.style.transform=`scale(${currentZoom})`; }
     function pushHistory() { const s=JSON.stringify(data); if(!history.length || history[history.length-1]!==s) { history.push(s); if(history.length>50) history.shift(); } }
-    function undo() { if(history.length>1){ history.pop(); data=JSON.parse(history[history.length-1]); render(); } }
+    function undo() { if(history.length > 1){ history.pop(); data=JSON.parse(history[history.length-1]); render(); } }
 
     function solvePower() {
         data.nodes.forEach(n => n.powered = false);
-        // Nguồn khởi tạo từ Máy cắt tổng khi đóng
         data.nodes.forEach(n => { if(n.type === 'mc_tong' && n.state && !data.wires.some(w => w.to === n.id && w.toPort === 'top')) n.powered = true; });
         for(let i=0; i<40; i++) {
             data.wires.forEach(w => {
@@ -249,21 +250,16 @@
     }
 
     function getRMUHtml(node) {
-        const busC = node.powered ? 'var(--on)' : 'white';
+        const busC = node.powered ? 'var(--on)' : 'var(--off)';
         let h = `<div style="margin-top:30px; position:relative; margin-left:10px">
             <input class="mc-label" style="left:${node.width-80}px" value="${node.label}" onchange="updateLabel('${node.id}', this.value)">
             <div class="symbol-box" style="width:${node.width}px; height:145px">
             <div style="position:absolute; height:4px; width:80%; left:10%; top:20px; background:${busC}"></div>`;
         for(let i=0; i<node.states.length; i++){
-            const bx=45+(i*70), s=node.states[i];
-            // Lấy trạng thái điện từ đầu vào (chấm vàng)
-            const wirePowered = getPortPower(node.id, 'bay_'+i);
-            
-            // Logic màu sắc:
-            const lineColor = wirePowered ? 'var(--on)' : 'white'; // Dây dưới cùng
-            const armColor = (s && (wirePowered || node.powered)) ? 'var(--on)' : (s ? 'white' : 'var(--off)'); // Cầu dao
-            const feederColor = (s && (wirePowered || node.powered)) ? 'var(--on)' : 'var(--off)'; // Đoạn sau cầu dao
-
+            const bx=45+(i*70), s=node.states[i], wirePowered = getPortPower(node.id, 'bay_'+i);
+            const hasPower = wirePowered || (node.powered && s);
+            const armColor = (s && hasPower) ? 'var(--on)' : 'var(--off)';
+            const lineColor = hasPower ? 'var(--on)' : 'var(--off)';
             h += `<div style="position:absolute; width:2px; height:15px; left:${bx-1}px; top:20px; background:${busC}"></div>
                   <div style="position:absolute; width:2px; height:25px; left:${bx-1}px; top:35px; background:${armColor}; transform-origin: bottom center; transform:rotate(${s?0:35}deg)"><div class="pivot" style="top:-3px; background:inherit"></div><div class="pivot" style="bottom:-3px; background:inherit"></div></div>
                   <div style="position:absolute; width:2px; height:75px; left:${bx-1}px; top:60px; background:${lineColor}"></div>
@@ -273,6 +269,36 @@
                   </div>`;
         }
         return h + `</div></div>`;
+    }
+
+    // --- SNAP & CONNECTION LOGIC ---
+    function onBusClick(id, e) {
+        const node = data.nodes.find(n => n.id === id);
+        const rect = e.currentTarget.getBoundingClientRect();
+        
+        // Tính toán tọa độ X tương đối dựa trên vị trí click chuột thực tế
+        // Không dùng snap ở đây để cho phép bắt điểm ở bất cứ đâu
+        let rx = (e.clientX - rect.left) / currentZoom;
+        const ry = 46; // Vị trí Y cố định giữa đường thanh cái
+
+        if (!selectedPort) {
+            selectedPort = { id, port: 'bus', rx, ry, abs: { x: node.x + rx, y: node.y + ry } };
+            ghostPath.style.display = 'block';
+        } else {
+            if (selectedPort.id !== id || selectedPort.port !== 'bus') {
+                data.wires.push({ 
+                    from: selectedPort.id, 
+                    fromPort: selectedPort.port, 
+                    fRel: { x: selectedPort.rx, y: selectedPort.ry }, 
+                    to: id, 
+                    toPort: 'bus', 
+                    tRel: { x: rx, y: ry }, 
+                    midY: snap((selectedPort.abs.y + node.y + ry) / 2) 
+                });
+                pushHistory();
+            }
+            selectedPort = null; ghostPath.style.display = 'none'; render();
+        }
     }
 
     function createPort(p, n, rx, ry, name) {
@@ -289,11 +315,6 @@
             }
             selectedPort=null; ghostPath.style.display='none'; render();
         }
-    }
-    function onBusClick(id, e) {
-        const node=data.nodes.find(n=>n.id===id), rect=e.currentTarget.getBoundingClientRect(), rx=snap((e.clientX-rect.left)/currentZoom);
-        if(!selectedPort){ selectedPort={id, port:'bus', rx, ry:44, abs:{x:node.x+rx, y:node.y+44}}; ghostPath.style.display='block'; }
-        else { data.wires.push({ from:selectedPort.id, fromPort:selectedPort.port, fRel:{x:selectedPort.rx,y:selectedPort.ry}, to:id, toPort:'bus', tRel:{x:rx,y:44}, midY:snap((selectedPort.abs.y+node.y+44)/2) }); selectedPort=null; ghostPath.style.display='none'; render(); pushHistory(); }
     }
 
     function renderWires() {
@@ -335,7 +356,7 @@
     function startResizeBus(e, id) { e.stopPropagation(); const n=data.nodes.find(n=>n.id===id); let sx=e.clientX, sw=n.width; document.onmousemove=(ev)=>{ n.width=snap(sw+(ev.clientX-sx)/currentZoom); render(); }; document.onmouseup=()=>{document.onmousemove=null; pushHistory();}; }
     function makeDraggable(el, node) {
         el.onmousedown=(e)=>{
-            if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.classList.contains('port')||e.target.classList.contains('btn-s')||e.target.classList.contains('bus-handle')) return;
+            if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.classList.contains('port')||e.target.classList.contains('btn-s')||e.target.classList.contains('bus-handle')||e.target.classList.contains('busbar-line')) return;
             let ox=e.clientX, oy=e.clientY; document.onmousemove=(ev)=>{
                 node.x=snap(node.x+(ev.clientX-ox)/currentZoom); node.y=snap(node.y+(ev.clientY-oy)/currentZoom); ox=ev.clientX; oy=ev.clientY;
                 el.style.left=node.x+'px'; el.style.top=node.y+'px'; renderWires();
