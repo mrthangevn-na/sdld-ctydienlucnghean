@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SLD Engineer Pro v7.5 - Cloud & Text Tool</title>
+    <title>SLD Engineer Pro v7.6 - Smart Save & Text Tool</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -25,6 +25,7 @@
         .workspace { flex: 1; position: relative; overflow: auto; background-image: radial-gradient(#222 1px, transparent 1px); background-size: 20px 20px; }
         #canvas { width: 3000px; height: 2000px; position: relative; }
 
+        /* Objects */
         .obj-wrap { position: absolute; cursor: move; min-width: 80px; z-index: 10; touch-action: none; }
         .delete-btn { position: absolute; top: -20px; left: -10px; color: white; background: #ff4444; cursor: pointer; font-weight: bold; font-size: 16px; display: none; z-index: 1000; border-radius: 50%; width: 22px; height: 22px; text-align: center; line-height: 20px; border: 2px solid #fff; }
         .obj-wrap:hover .delete-btn { display: block; }
@@ -34,15 +35,22 @@
         .btn-s { padding: 2px; font-size: 9px; color: white; border: none; border-radius: 2px; cursor: pointer; min-width: 35px; border: 1px solid #000; }
 
         /* Text Box Tool */
-        .text-box-container { border: 1px dashed #edca1a; display: flex; align-items: center; justify-content: center; background: rgba(237, 202, 26, 0.05); overflow: hidden; }
+        .text-box-container { border: 1px dashed #edca1a; display: flex; align-items: center; justify-content: center; background: rgba(237, 202, 26, 0.05); overflow: hidden; position: relative; }
         .text-box-input { background: transparent; border: none; color: white; width: 100%; height: 100%; text-align: center; outline: none; resize: none; overflow: hidden; display: flex; align-items: center; justify-content: center; font-family: inherit; }
-        .resize-handle { width: 10px; height: 10px; background: white; position: absolute; right: 0; bottom: 0; cursor: nwse-resize; z-index: 101; }
+        .resize-handle { width: 12px; height: 12px; background: #edca1a; position: absolute; right: 0; bottom: 0; cursor: nwse-resize; z-index: 101; border-radius: 2px; }
 
-        /* Project Modal */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; display: none; align-items: center; justify-content: center; }
-        .modal-content { background: #222; border: 1px solid #444; width: 350px; border-radius: 10px; padding: 20px; max-height: 80%; display: flex; flex-direction: column; }
-        .project-item { padding: 10px; background: #333; margin-bottom: 5px; border-radius: 4px; cursor: pointer; }
-        .project-item:hover { background: #444; }
+        /* Project Modals */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; display: none; align-items: center; justify-content: center; }
+        .modal-content { background: #1a1a1a; border: 1px solid #444; width: 380px; border-radius: 10px; padding: 20px; max-height: 85%; display: flex; flex-direction: column; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+        .modal-title { font-weight: bold; color: #edca1a; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; justify-content: space-between; font-size: 14px; }
+        .project-list { overflow-y: auto; flex: 1; margin-top: 10px; }
+        .project-item { padding: 12px; background: #2a2a2a; margin-bottom: 6px; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #444; }
+        .project-item:hover { background: #333; border-left-color: var(--accent); }
+        .btn-overwrite { font-size: 10px; background: #4a90e2; padding: 4px 8px; border-radius: 3px; border: none; }
+        
+        .save-input-group { display: flex; gap: 5px; margin-bottom: 15px; }
+        .save-input { flex: 1; background: #000; border: 1px solid #555; color: #fff; padding: 8px; border-radius: 4px; outline: none; font-size: 13px; }
+        .save-input:focus { border-color: var(--accent); }
 
         /* Graphics */
         .mc-container { position: relative; margin-top: 30px; margin-left: 10px; }
@@ -68,22 +76,31 @@
 <body>
 
 <div class="header">
-    <h2 style="font-size:16px; color:#edca1a; margin:0">SLD ENGINEER PRO v7.5</h2>
+    <h2 style="font-size:16px; color:#edca1a; margin:0">SLD ENGINEER PRO v7.6</h2>
     <div class="top-btns">
         <button onclick="undo()" style="background:#555">↩ Undo</button>
         <button onclick="clearCanvas()">Làm trắng</button>
-        <button onclick="showProjectList()" style="background:#ffc107; color:black; font-weight:bold">MỞ DỰ ÁN</button>
-        <button onclick="saveToCloud()" style="background:#28a745; font-weight:bold">LƯU ĐÁM MÂY</button>
+        <button onclick="openModal('load')" style="background:#ffc107; color:black; font-weight:bold">MỞ DỰ ÁN</button>
+        <button onclick="openModal('save')" style="background:#28a745; font-weight:bold">LƯU ĐÁM MÂY</button>
     </div>
 </div>
 
+<!-- Modal chung cho Mở và Lưu -->
 <div id="projectModal" class="modal">
     <div class="modal-content">
-        <div style="font-weight:bold; color:#edca1a; margin-bottom:15px; display:flex; justify-content:space-between">
-            <span>DANH SÁCH DỰ ÁN</span>
+        <div class="modal-title">
+            <span id="modalTitleText">DANH SÁCH DỰ ÁN</span>
             <span style="cursor:pointer" onclick="closeModal()">✖</span>
         </div>
-        <div id="projectList" style="overflow-y:auto; flex:1"></div>
+        
+        <!-- Phần Lưu mới (Chỉ hiện khi nhấn Lưu) -->
+        <div id="saveNewGroup" class="save-input-group">
+            <input type="text" id="newProjectName" class="save-input" placeholder="Tên dự án mới...">
+            <button onclick="confirmSaveNew()" style="background:#28a745; border:none; padding:8px 15px">Lưu mới</button>
+        </div>
+
+        <div style="font-size: 11px; color: #888; margin-bottom: 5px;" id="modalInstruction">Chọn dự án bên dưới để thao tác:</div>
+        <div id="projectList" class="project-list"></div>
         <button style="margin-top:15px; background:#444" onclick="closeModal()">Đóng</button>
     </div>
 </div>
@@ -104,7 +121,7 @@
     <div class="workspace" id="ws" onclick="deselectAll()">
         <div id="canvas">
             <svg id="conn-layer" class="conn-layer">
-                <path id="ghost-path" style="stroke:#fff; stroke-width:2; stroke-dasharray:5; opacity:0.6; fill:none; display:none"></path>
+                <path id="ghost-path" class="ghost-line" style="display:none"></path>
             </svg>
         </div>
     </div>
@@ -133,6 +150,81 @@
     let draggingWire = null;
     const PASS = "123456";
 
+    // --- QUẢN LÝ DỰ ÁN THÔNG MINH ---
+    let modalMode = 'load'; // 'load' hoặc 'save'
+
+    function openModal(mode) {
+        modalMode = mode;
+        const modal = document.getElementById('projectModal');
+        const listDiv = document.getElementById('projectList');
+        const title = document.getElementById('modalTitleText');
+        const saveGroup = document.getElementById('saveNewGroup');
+        const instruct = document.getElementById('modalInstruction');
+
+        modal.style.display = 'flex';
+        listDiv.innerHTML = "Đang tải...";
+        
+        if (mode === 'save') {
+            title.innerText = "LƯU DỰ ÁN LÊN ĐÁM MÂY";
+            saveGroup.style.display = 'flex';
+            instruct.innerText = "Hoặc chọn một dự án cũ để GHI ĐÈ:";
+        } else {
+            title.innerText = "MỞ DỰ ÁN TỪ ĐÁM MÂY";
+            saveGroup.style.display = 'none';
+            instruct.innerText = "Chọn một dự án để mở bản vẽ:";
+        }
+
+        db.ref('projects').once('value', (s) => {
+            listDiv.innerHTML = "";
+            if (!s.exists()) { listDiv.innerHTML = "Chưa có dữ liệu."; return; }
+            s.forEach((child) => {
+                const name = child.key;
+                const item = document.createElement('div');
+                item.className = 'project-item';
+                item.innerHTML = `<span>📁 ${name}</span> ${mode==='save'?'<button class="btn-overwrite">GHI ĐÈ</button>':''}`;
+                item.onclick = () => {
+                    if (mode === 'save') confirmOverwrite(name);
+                    else loadProject(name);
+                };
+                listDiv.appendChild(item);
+            });
+        });
+    }
+
+    function confirmSaveNew() {
+        const name = document.getElementById('newProjectName').value.trim();
+        if (!name) { alert("Vui lòng nhập tên!"); return; }
+        saveData(name, false);
+    }
+
+    function confirmOverwrite(name) {
+        if (confirm(`Bạn có chắc chắn muốn GHI ĐÈ lên dự án "${name}" không? Dữ liệu cũ sẽ bị mất.`)) {
+            saveData(name, true);
+        }
+    }
+
+    function saveData(name, isOverwrite) {
+        db.ref('projects/' + name).set(data).then(() => {
+            alert(isOverwrite ? "Đã ghi đè thành công!" : "Đã lưu dự án mới thành công!");
+            closeModal();
+            document.getElementById('newProjectName').value = "";
+        });
+    }
+
+    function loadProject(name) {
+        db.ref('projects/' + name).once('value', (s) => {
+            if (s.exists()) {
+                data = s.val(); 
+                if (!data.wires) data.wires = [];
+                render(); pushHistory(); closeModal();
+                alert("Đã mở dự án: " + name);
+            }
+        });
+    }
+
+    function closeModal() { document.getElementById('projectModal').style.display = 'none'; }
+
+    // --- LOGIC HỆ THỐNG ---
     function pushHistory() {
         const state = JSON.stringify(data);
         if (history.length === 0 || history[history.length - 1] !== state) {
@@ -147,31 +239,6 @@
         data = JSON.parse(history[history.length - 1]);
         render();
     }
-
-    function saveToCloud() {
-        const name = prompt("Nhập tên dự án:");
-        if (!name) return;
-        db.ref('projects/' + name).set(data).then(() => alert("Đã lưu!"));
-    }
-
-    function showProjectList() {
-        const listDiv = document.getElementById('projectList');
-        listDiv.innerHTML = "Đang tải...";
-        document.getElementById('projectModal').style.display = 'flex';
-        db.ref('projects').once('value', (s) => {
-            listDiv.innerHTML = "";
-            s.forEach((c) => {
-                const item = document.createElement('div');
-                item.className = 'project-item'; item.innerHTML = `📁 ${c.key}`;
-                item.onclick = () => {
-                    data = c.val(); render();
-                    pushHistory(); closeModal();
-                };
-                listDiv.appendChild(item);
-            });
-        });
-    }
-    function closeModal() { document.getElementById('projectModal').style.display = 'none'; }
 
     function evDrag(ev, type) { ev.dataTransfer.setData("type", type); }
     canvas.ondragover = (e) => e.preventDefault();
@@ -357,9 +424,7 @@
     function updateLabel(id, v) { data.nodes.find(n=>n.id===id).label = v; pushHistory(); }
     function clearCanvas() { if(confirm("Xóa sạch?")) { data={nodes:[], wires:[]}; pushHistory(); render(); } }
     function deselectAll() { selectedPort=null; ghostPath.style.display='none'; }
-    
     function startResizeBus(e, id) { e.stopPropagation(); const n = data.nodes.find(n=>n.id===id); let sx=e.clientX, sw=n.width; document.onmousemove=(ev)=>{n.width=Math.max(50, sw+(ev.clientX-sx)); render();}; document.onmouseup=()=>{document.onmousemove=null; pushHistory();}; }
-    
     function startResizeText(e, id) {
         e.stopPropagation(); const n = data.nodes.find(n=>n.id===id);
         let sx=e.clientX, sy=e.clientY, sw=n.width, sh=n.height;
@@ -370,7 +435,6 @@
         };
         document.onmouseup=()=>{document.onmousemove=null; pushHistory();};
     }
-
     function makeDraggable(el, node) {
         let ox, oy; el.onmousedown=(e)=>{
             if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.classList.contains('port')||e.target.classList.contains('btn-s')||e.target.classList.contains('resize-handle')) return;
