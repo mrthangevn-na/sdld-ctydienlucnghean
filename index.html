@@ -191,13 +191,29 @@
                     <path d="${node.type==='arrow_up'?'M20 55 V5 M10 20 L20 5 L30 20':'M20 5 V55 M10 40 L20 55 L30 40'}" stroke="${color}" stroke-width="4" fill="none"/>
                 </svg>`;
             } else if(node.type.startsWith('mc') || node.type === 'mc_tong') {
-                const p=node.powered, s=node.state;
-                html=`<div class="mc-container"><input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)" style="outline:none">
-                    <div class="mc-box" onclick="toggleSwitch('${node.id}')" style="cursor:pointer; pointer-events:auto">
-                        <div class="line-v" style="height:56px; top:-31px; background:${p?'var(--on)':'var(--off)'}"></div>
-                        <div class="mc-arm" style="transform:rotate(${s?0:35}deg); background:${s?(p?'var(--on)':'white'):'var(--off)'}"><div class="pivot" style="top:-3px; background:inherit"></div><div class="pivot" style="bottom:-3px; background:inherit"></div></div>
-                        <div class="line-v" style="height:65px; top:60px; background:${(p && s)?'var(--on)':'var(--off)'}"></div>
-                    </div></div>`;
+    const p = node.powered, s = node.state;
+    html = `<div style="position:relative; width:80px; height:160px;">
+        <!-- Nhãn Máy cắt: Đưa sang bên phải để thoáng bản vẽ -->
+        <input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)" 
+               style="position:absolute; top:45px; left:90px; width:120px; text-align:left; outline:none;">
+        
+        <!-- Khung máy cắt: Căn lề trái 15px để trục giữa (24px + 1px) nằm đúng vị trí 40px -->
+        <div class="mc-box" onclick="toggleSwitch('${node.id}')" 
+             style="position:absolute; left:15px; top:35px; cursor:pointer; pointer-events:auto; width:50px; height:90px;">
+            
+            <!-- Đường dây trên -->
+            <div class="line-v" style="height:56px; top:-31px; left:24px; background:${p?'var(--on)':'var(--off)'}"></div>
+            
+            <!-- Cánh tay máy cắt (Arm) -->
+            <div class="mc-arm" style="transform:rotate(${s?0:35}deg); left:24px; top:25px; background:${s?(p?'var(--on)':'white'):'var(--off)'}">
+                <div class="pivot" style="top:-3px; background:inherit"></div>
+                <div class="pivot" style="bottom:-3px; background:inherit"></div>
+            </div>
+            
+            <!-- Đường dây dưới -->
+            <div class="line-v" style="height:65px; top:60px; left:24px; background:${(p && s)?'var(--on)':'var(--off)'}"></div>
+        </div>
+    </div>`;
             } else if(node.type === 'mba') {
     html = `<div style="position:relative; width:80px; height:130px;">
         <!-- Nhãn MBA - Đưa về absolute để không làm lệch trục Y -->
@@ -236,7 +252,7 @@
             const del=document.createElement('div'); del.className='delete-btn'; del.innerHTML='×';
             del.onclick=(e)=>{e.stopPropagation(); deleteNode(node.id);}; wrap.appendChild(del);
 
-            if(node.type.startsWith('mc')) { createPort(wrap, node, 35, 0, 'top'); createPort(wrap, node, 35, 155, 'bottom'); }
+            if(node.type.startsWith('mc')) { createPort(wrap, node, 40, 0, 'top'); createPort(wrap, node,40, 160, 'bottom'); }
             else if(node.type==='mba') { createPort(wrap, node, 40, 0, 'top'); createPort(wrap, node, 40, 130, 'bottom'); }
             else if(node.type.startsWith('rmu')){ for(let i=0;i<node.states.length;i++) createPort(wrap, node, 50+(i*80), 200, 'bay_'+i); }
             else if(node.type.startsWith('arrow')){ createPort(wrap, node, 20, 30, 'pt'); }
