@@ -237,7 +237,7 @@
             del.onclick=(e)=>{e.stopPropagation(); deleteNode(node.id);}; wrap.appendChild(del);
 
             if(node.type.startsWith('mc')) { createPort(wrap, node, 35, 0, 'top'); createPort(wrap, node, 35, 155, 'bottom'); }
-            else if(node.type==='mba') { createPort(wrap, node, 30, 0, 'top'); createPort(wrap, node, 30, 130, 'bottom'); }
+            else if(node.type==='mba') { createPort(wrap, node, 40, 0, 'top'); createPort(wrap, node, 40, 130, 'bottom'); }
             else if(node.type.startsWith('rmu')){ for(let i=0;i<node.states.length;i++) createPort(wrap, node, 50+(i*80), 200, 'bay_'+i); }
             else if(node.type.startsWith('arrow')){ createPort(wrap, node, 20, 30, 'pt'); }
 
