@@ -202,7 +202,15 @@
     html = `<div style="position:relative; width:80px; height:130px;">
         <!-- Nhãn MBA - Đưa về absolute để không làm lệch trục Y -->
         <input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)" 
-               style="position:absolute; top:-50px; left:-50px; width:180px; outline:none; text-align:center;">
+              style="position: absolute; 
+                   left: 75px; 
+                   top: 50%; 
+                   transform: translateY(-50%); 
+                   width: 150px; 
+                   text-align: left; 
+                   background: rgba(0,0,0,0.3); 
+                   border: 1px dashed #555; 
+                   outline: none;">
         
         <!-- Đường dây phía trên (Sơ cấp) -->
         <div class="line-v" style="left:39px; height:30px; top:0px; background:${node.powered?'var(--on)':'var(--off)'}"></div>
@@ -229,7 +237,7 @@
             del.onclick=(e)=>{e.stopPropagation(); deleteNode(node.id);}; wrap.appendChild(del);
 
             if(node.type.startsWith('mc')) { createPort(wrap, node, 35, 0, 'top'); createPort(wrap, node, 35, 155, 'bottom'); }
-            else if(node.type==='mba') { createPort(wrap, node, 40, 0, 'top'); createPort(wrap, node, 40, 130, 'bottom'); }
+            else if(node.type==='mba') { createPort(wrap, node, 30, 0, 'top'); createPort(wrap, node, 30, 130, 'bottom'); }
             else if(node.type.startsWith('rmu')){ for(let i=0;i<node.states.length;i++) createPort(wrap, node, 50+(i*80), 200, 'bay_'+i); }
             else if(node.type.startsWith('arrow')){ createPort(wrap, node, 20, 30, 'pt'); }
 
