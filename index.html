@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SLD Engineer Pro v9.4 - Dynamic Busbar Snapping</title>
+    <title>SLD Engineer Pro v9.5 - UI Optimized</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -14,6 +14,7 @@
 
         /* Header */
         .header { height: 50px; background: var(--panel); display: flex; align-items: center; padding: 0 15px; border-bottom: 1px solid #333; justify-content: space-between; z-index: 1001; position: relative; }
+        .header-left { display: flex; align-items: center; gap: 10px; }
         .project-title { position: absolute; left: 50%; transform: translateX(-50%); color: #edca1a; font-weight: bold; font-size: 14px; text-transform: uppercase; pointer-events: none; white-space: nowrap; }
         .top-btns { display: flex; gap: 8px; align-items: center; }
         
@@ -21,8 +22,12 @@
         button:hover { background: var(--accent); }
 
         .main { display: flex; height: calc(100% - 50px); position: relative; }
-        .sidebar { width: 200px; background: var(--panel); border-right: 1px solid #333; padding: 15px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; z-index: 1000; }
-        .tool-item { background: #2d2d2d; border: 1px solid #444; padding: 12px; border-radius: 6px; cursor: grab; text-align: center; font-size: 11px; user-select: none; }
+        
+        /* Sidebar Toggle Logic */
+        .sidebar { width: 200px; background: var(--panel); border-right: 1px solid #333; padding: 15px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; z-index: 1000; transition: all 0.3s ease; }
+        .sidebar.collapsed { width: 0; padding: 0; border: none; margin-left: -1px; overflow: hidden; }
+
+        .tool-item { background: #2d2d2d; border: 1px solid #444; padding: 12px; border-radius: 6px; cursor: grab; text-align: center; font-size: 11px; user-select: none; min-width: 170px; }
 
         /* Workspace */
         .workspace { flex: 1; position: relative; overflow: auto; background-image: radial-gradient(#222 1px, transparent 1px); background-size: 20px 20px; }
@@ -71,12 +76,14 @@
 <body onmouseup="stopDragging()">
 
 <div class="header">
-    <div class="header-left"><button onclick="undo()">↩ Undo</button></div>
+    <div class="header-left">
+        <button onclick="toggleSidebar()" style="background:#4a90e2; font-size:16px; padding: 6px 15px;">☰ MENU</button>
+        <button onclick="undo()">↩ Undo</button>
+    </div>
     <div class="project-title" id="displayProjectName">DỰ ÁN TRỐNG</div>
     <div class="top-btns">
         <div style="font-size:10px; display:flex; align-items:center; gap:3px; background:#222; padding:3px 10px; border-radius:6px; margin-right:10px">
             Zoom: <button onclick="changeZoom(0.1)">+</button><button onclick="changeZoom(-0.1)">-</button>
-            <input type="checkbox" id="gridToggle"> Snap
         </div>
         <button onclick="handleNew()" style="background:#007bff">TẠO MỚI</button>
         <button onclick="handleSave()" style="background:#28a745">SAVE</button>
@@ -112,7 +119,7 @@
 </div>
 
 <div class="main">
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
         <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'mc_tong')">Máy Cắt Tổng</div>
         <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'mc_feeder')">Máy Cắt Nhánh</div>
         <div class="tool-item" draggable="true" ondragstart="evDrag(event, 'mba')">Máy Biến Áp</div>
@@ -162,8 +169,13 @@
     const connLayer = document.getElementById('conn-layer');
     const ghostPath = document.getElementById('ghost-path');
 
+    // --- UI Toggles ---
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('collapsed');
+    }
+
     // --- FILE MGMT ---
-    function handleNew() { if(data.nodes.length > 0 && confirm("Lưu dự án hiện tại trước khi tạo mới?")) openSaveModal(() => resetB()); else resetB(); }
+    function handleNew() { if(data.nodes.length > 0 && confirm("Lưu trước khi tạo mới?")) openSaveModal(() => resetB()); else resetB(); }
     function resetB() { let n = prompt("Tên dự án mới:"); if(!n) return; data={nodes:[],wires:[]}; selectedProjectName=n; document.getElementById('displayProjectName').innerText=n.toUpperCase(); render(); pushHistory(); }
     function handleSave() { if(!selectedProjectName) openSaveModal(); else db.ref('projects/'+selectedProjectName).set(data).then(()=>alert("Đã lưu!")); }
     function openOpenModal() { document.getElementById('openModal').style.display='flex'; fetchP('openList', (n)=>nameInList=n); }
@@ -173,8 +185,8 @@
     function fetchP(cid, onS) { const div=document.getElementById(cid); div.innerHTML="..."; db.ref('projects').once('value', s => { div.innerHTML=""; if(s.exists()) s.forEach(c => { const i=document.createElement('div'); i.className='project-item'; i.innerText="📁 "+c.key; i.onclick=()=>{ Array.from(div.children).forEach(e=>e.classList.remove('selected')); i.classList.add('selected'); onS(c.key); }; div.appendChild(i); }); }); }
     function closeModal(id) { document.getElementById(id).style.display='none'; }
 
-    // --- CORE LOGIC ---
-    function snap(v) { return document.getElementById('gridToggle').checked ? Math.round(v/20)*20 : v; }
+    // --- CORE LOGIC (SNAP REMOVED) ---
+    function snap(v) { return v; } // Chức năng Snap bị loại bỏ, trả về giá trị thực
     function changeZoom(d) { currentZoom = Math.min(Math.max(0.3, currentZoom+d), 2.5); canvasContainer.style.transform=`scale(${currentZoom})`; }
     function pushHistory() { const s=JSON.stringify(data); if(!history.length || history[history.length-1]!==s) { history.push(s); if(history.length>50) history.shift(); } }
     function undo() { if(history.length > 1){ history.pop(); data=JSON.parse(history[history.length-1]); render(); } }
@@ -271,15 +283,12 @@
         return h + `</div></div>`;
     }
 
-    // --- SNAP & CONNECTION LOGIC ---
+    // --- SNAP (DYN) & CONNECTION LOGIC ---
     function onBusClick(id, e) {
         const node = data.nodes.find(n => n.id === id);
         const rect = e.currentTarget.getBoundingClientRect();
-        
-        // Tính toán tọa độ X tương đối dựa trên vị trí click chuột thực tế
-        // Không dùng snap ở đây để cho phép bắt điểm ở bất cứ đâu
         let rx = (e.clientX - rect.left) / currentZoom;
-        const ry = 46; // Vị trí Y cố định giữa đường thanh cái
+        const ry = 46; 
 
         if (!selectedPort) {
             selectedPort = { id, port: 'bus', rx, ry, abs: { x: node.x + rx, y: node.y + ry } };
@@ -293,7 +302,7 @@
                     to: id, 
                     toPort: 'bus', 
                     tRel: { x: rx, y: ry }, 
-                    midY: snap((selectedPort.abs.y + node.y + ry) / 2) 
+                    midY: (selectedPort.abs.y + node.y + ry) / 2 
                 });
                 pushHistory();
             }
@@ -310,7 +319,7 @@
         if(!selectedPort){ selectedPort={id, port, rx, ry, abs:{x:n.x+rx, y:n.y+ry}}; ghostPath.style.display='block'; }
         else {
             if(selectedPort.id !== id){
-                data.wires.push({ from: selectedPort.id, fromPort: selectedPort.port, fRel:{x:selectedPort.rx,y:selectedPort.ry}, to:id, toPort:port, tRel:{x:rx,y:ry}, midY: snap((selectedPort.abs.y + n.y+ry)/2) });
+                data.wires.push({ from: selectedPort.id, fromPort: selectedPort.port, fRel:{x:selectedPort.rx,y:selectedPort.ry}, to:id, toPort:port, tRel:{x:rx,y:ry}, midY: (selectedPort.abs.y + n.y+ry)/2 });
                 pushHistory();
             }
             selectedPort=null; ghostPath.style.display='none'; render();
@@ -332,14 +341,14 @@
     function startDragWire(e, i) { e.stopPropagation(); draggingWireIdx = i; }
     function stopDragging() { if(draggingWireIdx!==null){ draggingWireIdx=null; pushHistory(); } }
     canvas.onmousemove = (e) => {
-        const rect=canvas.getBoundingClientRect(), mx=snap((e.clientX-rect.left)/currentZoom), my=snap((e.clientY-rect.top)/currentZoom);
+        const rect=canvas.getBoundingClientRect(), mx=(e.clientX-rect.left)/currentZoom, my=(e.clientY-rect.top)/currentZoom;
         if(selectedPort) ghostPath.setAttribute('d', `M ${selectedPort.abs.x} ${selectedPort.abs.y} V ${my} H ${mx} V ${my}`);
         if(draggingWireIdx !== null) { data.wires[draggingWireIdx].midY = my; renderWires(); }
     };
 
     function evDrag(e, type) { e.dataTransfer.setData("type", type); }
     function evDrop(e) {
-        e.preventDefault(); const rect=canvasContainer.getBoundingClientRect(), x=snap((e.clientX-rect.left)/currentZoom), y=snap((e.clientY-rect.top)/currentZoom), type=e.dataTransfer.getData("type"); if(!type) return;
+        e.preventDefault(); const rect=canvasContainer.getBoundingClientRect(), x=(e.clientX-rect.left)/currentZoom, y=(e.clientY-rect.top)/currentZoom, type=e.dataTransfer.getData("type"); if(!type) return;
         let node={id:'n'+Date.now(), type, x, y, label:""};
         if(type==='busbar') node.width=200;
         else if(type.startsWith('rmu')){ const c={rmu2:2,rmu3:3,rmu4:4,rmu5:5}[type]; node.width=90+(c-1)*70; node.states=new Array(c).fill(false); }
@@ -353,12 +362,12 @@
     function deleteNode(id) { data.nodes=data.nodes.filter(n=>n.id!==id); data.wires=data.wires.filter(w=>w.from!==id && w.to!==id); render(); pushHistory(); }
     function deleteWire(i) { data.wires.splice(i,1); render(); pushHistory(); }
     function updateLabel(id, v) { data.nodes.find(n=>n.id===id).label=v; pushHistory(); }
-    function startResizeBus(e, id) { e.stopPropagation(); const n=data.nodes.find(n=>n.id===id); let sx=e.clientX, sw=n.width; document.onmousemove=(ev)=>{ n.width=snap(sw+(ev.clientX-sx)/currentZoom); render(); }; document.onmouseup=()=>{document.onmousemove=null; pushHistory();}; }
+    function startResizeBus(e, id) { e.stopPropagation(); const n=data.nodes.find(n=>n.id===id); let sx=e.clientX, sw=n.width; document.onmousemove=(ev)=>{ n.width=sw+(ev.clientX-sx)/currentZoom; render(); }; document.onmouseup=()=>{document.onmousemove=null; pushHistory();}; }
     function makeDraggable(el, node) {
         el.onmousedown=(e)=>{
             if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.classList.contains('port')||e.target.classList.contains('btn-s')||e.target.classList.contains('bus-handle')||e.target.classList.contains('busbar-line')) return;
             let ox=e.clientX, oy=e.clientY; document.onmousemove=(ev)=>{
-                node.x=snap(node.x+(ev.clientX-ox)/currentZoom); node.y=snap(node.y+(ev.clientY-oy)/currentZoom); ox=ev.clientX; oy=ev.clientY;
+                node.x=node.x+(ev.clientX-ox)/currentZoom; node.y=node.y+(ev.clientY-oy)/currentZoom; ox=ev.clientX; oy=ev.clientY;
                 el.style.left=node.x+'px'; el.style.top=node.y+'px'; renderWires();
             }; document.onmouseup=()=>{document.onmousemove=null; pushHistory();};
         };
