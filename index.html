@@ -194,15 +194,28 @@
                 const p=node.powered, s=node.state;
                 html=`<div class="mc-container"><input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)" style="outline:none">
                     <div class="mc-box" onclick="toggleSwitch('${node.id}')" style="cursor:pointer; pointer-events:auto">
-                        <div class="line-v" style="height:56px; top:-31px; background:${p?'var(--on)':'white'}"></div>
+                        <div class="line-v" style="height:56px; top:-31px; background:${p?'var(--on)':'var(--off)'}"></div>
                         <div class="mc-arm" style="transform:rotate(${s?0:35}deg); background:${s?(p?'var(--on)':'white'):'var(--off)'}"><div class="pivot" style="top:-3px; background:inherit"></div><div class="pivot" style="bottom:-3px; background:inherit"></div></div>
                         <div class="line-v" style="height:65px; top:60px; background:${(p && s)?'var(--on)':'var(--off)'}"></div>
                     </div></div>`;
             } else if(node.type === 'mba') {
-                html=`<div style="margin-top:30px; position:relative; margin-left:10px"><input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)" style="outline:none">
-                    <div class="line-v" style="left:29px; height:30px; top:-30px; background:${node.powered?'var(--on)':'white'}"></div>
-                    <svg width="60" height="60"><circle cx="30" cy="20" r="18" stroke="${node.powered?'var(--on)':'var(--box)'}" stroke-width="2" fill="none"/><circle cx="30" cy="40" r="18" stroke="${node.powered?'var(--on)':'var(--box)'}" stroke-width="2" fill="none"/></svg>
-                    <div class="line-v" style="left:29px; height:40px; top:60px; background:${node.powered?'var(--on)':'var(--off)'}"></div></div>`;
+    html = `<div style="position:relative; width:80px; height:130px;">
+        <!-- Nhãn MBA - Đưa về absolute để không làm lệch trục Y -->
+        <input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)" 
+               style="position:absolute; top:-50px; left:-50px; width:180px; outline:none; text-align:center;">
+        
+        <!-- Đường dây phía trên (Sơ cấp) -->
+        <div class="line-v" style="left:39px; height:30px; top:0px; background:${node.powered?'var(--on)':'var(--off)'}"></div>
+        
+        <!-- Ký hiệu SVG - Căn giữa tại X=40 -->
+        <svg width="80" height="60" style="position:absolute; top:30px; left:0">
+            <circle cx="40" cy="18" r="18" stroke="${node.powered?'var(--on)':'var(--box)'}" stroke-width="2" fill="none"/>
+            <circle cx="40" cy="38" r="18" stroke="${node.powered?'var(--on)':'var(--box)'}" stroke-width="2" fill="none"/>
+        </svg>
+        
+        <!-- Đường dây phía dưới (Thứ cấp) -->
+        <div class="line-v" style="left:39px; height:40px; top:90px; background:${node.powered?'var(--on)':'var(--off)'}"></div>
+    </div>`;
             } else if(node.type === 'busbar') {
                 html=`<div class="busbar-container"><input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)" style="top:15px; left:0; outline:none">
                     <div class="busbar-line" style="width:${node.width}px; background:${node.powered?'var(--on)':'var(--off)'}" onclick="onBusClick('${node.id}', event)"></div>
