@@ -319,17 +319,61 @@
     }
 
     // --- SHARED ---
-    function evDrag(e, type) { e.dataTransfer.setData("type", type); }
-    function evDrop(e) {
-        e.preventDefault(); const rect=canvasContainer.getBoundingClientRect(), x=(e.clientX-rect.left)/currentZoom, y=(e.clientY-rect.top)/currentZoom, type=e.dataTransfer.getData("type"); if(!type) return;
-        let node={id:'n'+Date.now(), type, x, y, label:""};
-        if(type.startsWith('rmu')){ const c={rmu2:2,rmu3:3,rmu4:4,rmu5:5}[type]; node.states=new Array(c).fill(false); node.earthStates=new Array(c).fill(false); }
-        else if(type.startsWith('arrow')) node.powered = false;
-        else if(type==='busbar') node.width=200;
-        else if(type==='text_box'){ node.label="..."; node.width=150; node.height=50; }
-        else node.state=false;
-        data.nodes.push(node); pushHistory(); render();
+    / 1. Khi bắt đầu kéo: Lưu kiểu thiết bị vào bộ nhớ đệm "text"
+function evDrag(e, type) {
+    e.dataTransfer.setData("text", type); 
+    e.dataTransfer.effectAllowed = "copy";
+}
+
+// 2. Khi thả vào Workspace
+function evDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Lấy dữ liệu kiểu thiết bị ra
+    const type = e.dataTransfer.getData("text");
+    if (!type) return; // Nếu không có dữ liệu thì thoát
+
+    const rect = canvasContainer.getBoundingClientRect();
+    
+    // Tính toán tọa độ chuẩn (Account cho Zoom và vị trí Canvas)
+    const x = (e.clientX - rect.left) / currentZoom;
+    const y = (e.clientY - rect.top) / currentZoom;
+
+    // Tạo đối tượng Node mới
+    let node = {
+        id: 'n' + Date.now(),
+        type: type,
+        x: x,
+        y: y,
+        label: (type === 'text_box' ? "Ghi chú..." : "")
+    };
+
+    // Khởi tạo các thuộc tính riêng cho từng loại thiết bị
+    if (type.startsWith('rmu')) {
+        const count = {rmu2: 2, rmu3: 3, rmu4: 4, rmu5: 5}[type];
+        node.states = new Array(count).fill(false);
+        node.earthStates = new Array(count).fill(false);
+    } 
+    else if (type.startsWith('arrow')) {
+        node.powered = false;
+    } 
+    else if (type === 'busbar') {
+        node.width = 200;
+    } 
+    else if (type === 'text_box') {
+        node.width = 150;
+        node.height = 50;
+    } 
+    else {
+        node.state = false; // Mặc định cho Máy cắt (MC)
     }
+
+    // Đẩy vào mảng dữ liệu và vẽ lại
+    data.nodes.push(node);
+    pushHistory();
+    render();
+}
     function createPort(p, n, rx, ry, name) { const d=document.createElement('div'); d.className='port'; d.style.left=rx+'px'; d.style.top=ry+'px'; d.onclick=(e)=>{e.stopPropagation(); onPortClick(n.id, name, rx, ry);}; p.appendChild(d); }
     function onPortClick(id, port, rx, ry) { const n=data.nodes.find(n=>n.id===id); if(!selectedPort){ selectedPort={id, port, rx, ry, abs:{x:n.x+rx, y:n.y+ry}}; ghostPath.style.display='block'; } else { if(selectedPort.id !== id){ data.wires.push({ from: selectedPort.id, fromPort: selectedPort.port, fRel:{x:selectedPort.rx,y:selectedPort.ry}, to:id, toPort:port, tRel:{x:rx,y:ry}, midY: (selectedPort.abs.y + n.y+ry)/2 }); pushHistory(); } selectedPort=null; ghostPath.style.display='none'; render(); } }
     function onBusClick(id, e) { const node=data.nodes.find(n=>n.id===id), rect=e.currentTarget.getBoundingClientRect(), rx=(e.clientX-rect.left)/currentZoom; if(!selectedPort){ selectedPort={id, port:'bus', rx, ry:46, abs:{x:node.x+rx, y:node.y+46}}; ghostPath.style.display='block'; } else { data.wires.push({ from:selectedPort.id, fromPort:selectedPort.port, fRel:{x:selectedPort.rx,y:selectedPort.ry}, to:id, toPort:'bus', tRel:{x:rx,y:46}, midY:(selectedPort.abs.y+node.y+46)/2 }); selectedPort=null; ghostPath.style.display='none'; render(); pushHistory(); } }
