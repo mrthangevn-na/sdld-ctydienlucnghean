@@ -42,12 +42,11 @@
         .wire-path.powered { stroke: var(--on) !important; }
         .port { width: 14px; height: 14px; background: #edca1a; border-radius: 50%; position: absolute; cursor: crosshair; z-index: 50; border: 2px solid #000; transform: translate(-50%, -50%); }
 
-        .mc-container { position: relative; margin-top: 30px; margin-left: 10px; }
-        .mc-box { width: 50px; height: 90px; border: 2px solid var(--box); background: #000; position: relative; pointer-events: none; }
-        .line-v { position: absolute; width: 2px; left: 24px; }
-        .mc-arm { position: absolute; width: 2px; left: 24px; top: 25px; height: 35px; transform-origin: bottom center; transition: 0.3s; }
+        .mc-box { width: 50px; height: 90px; border: 2px solid var(--box); background: #000; position: absolute; pointer-events: auto; }
+        .line-v { position: absolute; width: 2px; }
+        .mc-arm { position: absolute; width: 2px; height: 35px; transform-origin: bottom center; transition: 0.3s; }
         .pivot { position: absolute; width: 6px; height: 6px; border: 1px solid #fff; border-radius: 50%; left: -3px; background: inherit; }
-        .mc-label { position: absolute; left: 65px; top: -30px; background: transparent; border: 1px dashed #555; color: #edca1a; font-weight: bold; font-size: 13px; width: 120px; outline: none; }
+        .mc-label { position: absolute; background: transparent; border: 1px dashed #555; color: #edca1a; font-weight: bold; font-size: 12px; outline: none; }
 
         .busbar-container { position: relative; padding-top: 40px; pointer-events: none; }
         .busbar-line { height: 12px; background: var(--off); border-radius: 6px; cursor: crosshair; min-width: 50px; pointer-events: auto; }
@@ -107,7 +106,6 @@
 <div id="saveModal" class="modal"><div class="modal-content"><div style="font-weight:bold; color:#28a745; margin-bottom:15px; display:flex; justify-content:space-between"><span>LƯU DỰ ÁN</span><span style="cursor:pointer" onclick="closeModal('saveModal')">✖</span></div><input type="text" id="saveInput" style="width:100%; background:#000; border:1px solid #444; color:#fff; padding:10px; margin-bottom:10px; box-sizing:border-box" placeholder="Tên dự án..."><div id="saveList" class="project-list"></div><div style="margin-top:15px; display:flex; gap:10px"><button onclick="confirmSaveAs()" style="flex:1; background:#28a745">LƯU</button><button onclick="closeModal('saveModal')" style="flex:1">ĐÓNG</button></div></div></div>
 
 <script>
-    // --- FIREBASE CONFIG (Giữ nguyên) ---
     const firebaseConfig = {
         apiKey: "AIzaSyC9aGNmyKDkHvqQg0CY9SfrmNrMhFQGSzo",
         authDomain: "my-sld-project.firebaseapp.com",
@@ -133,7 +131,6 @@
     const connLayer = document.getElementById('conn-layer');
     const ghostPath = document.getElementById('ghost-path');
 
-    // --- FILE MGMT ---
     function handleNew() { if(data.nodes.length > 0 && confirm("Lưu dự án hiện tại trước khi tạo mới?")) openSaveModal(() => resetB()); else resetB(); }
     function resetB() { let n = prompt("Tên dự án:"); if(!n) return; data={nodes:[],wires:[]}; selectedProjectName=n; document.getElementById('displayProjectName').innerText=n.toUpperCase(); render(); pushHistory(); }
     function handleSave() { if(!selectedProjectName) openSaveModal(); else db.ref('projects/'+selectedProjectName).set(data).then(()=>alert("Đã lưu!")); }
@@ -144,7 +141,25 @@
     function fetchP(cid, onS) { const div=document.getElementById(cid); div.innerHTML="..."; db.ref('projects').once('value', s => { div.innerHTML=""; if(s.exists()) s.forEach(c => { const i=document.createElement('div'); i.className='project-item'; i.innerText="📁 "+c.key; i.onclick=()=>{ Array.from(div.children).forEach(e=>e.classList.remove('selected')); i.classList.add('selected'); onS(c.key); }; div.appendChild(i); }); }); }
     function closeModal(id) { document.getElementById(id).style.display='none'; }
 
-    // --- LOGIC ---
+    // --- DRAG DROP ---
+    function evDrag(e, type) { e.dataTransfer.setData("text", type); }
+    function evDrop(e) {
+        e.preventDefault();
+        const type = e.dataTransfer.getData("text");
+        if(!type) return;
+        const rect = canvasContainer.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / currentZoom;
+        const y = (e.clientY - rect.top) / currentZoom;
+        let node = {id:'n'+Date.now(), type, x, y, label:""};
+        if(type.startsWith('rmu')){ const c={rmu2:2,rmu3:3,rmu4:4,rmu5:5}[type]; node.states=new Array(c).fill(false); node.earthStates=new Array(c).fill(false); }
+        else if(type.startsWith('arrow')) node.powered = false;
+        else if(type==='busbar') node.width=200;
+        else if(type==='text_box'){ node.label="Ghi chú..."; node.width=150; node.height=50; }
+        else node.state=false;
+        data.nodes.push(node); render(); pushHistory();
+    }
+
+    // --- POWER LOGIC ---
     function solvePower() {
         data.nodes.forEach(n => n.powered = false);
         data.nodes.forEach(n => { 
@@ -160,13 +175,11 @@
             });
         }
     }
-
     function isPortActive(n, p) {
         if(n.type.startsWith('mc') || n.type === 'mc_tong') return n.state;
         if(n.type.startsWith('rmu')) return p.startsWith('bay') ? n.states[parseInt(p.split('_')[1])] : true;
         return true;
     }
-
     function getPortPower(nid, p) {
         const w = data.wires.find(w => (w.from===nid && w.fromPort===p) || (w.to===nid && w.toPort===p));
         if(!w) return false;
@@ -183,76 +196,45 @@
             wrap.style.left=node.x+'px'; wrap.style.top=node.y+'px';
             let html='';
 
-            if(node.type.startsWith('rmu')) {
-                html = getRMUHtml(node);
-            } else if(node.type.startsWith('arrow')) {
-                const color = node.powered ? 'var(--on)' : 'var(--off)';
-                html = `<svg width="40" height="60" style="overflow:visible">
-                    <path d="${node.type==='arrow_up'?'M20 55 V5 M10 20 L20 5 L30 20':'M20 5 V55 M10 40 L20 55 L30 40'}" stroke="${color}" stroke-width="4" fill="none"/>
-                </svg>`;
-            } else if(node.type.startsWith('mc') || node.type === 'mc_tong') {
-    const p = node.powered, s = node.state;
-    html = `<div style="position:relative; width:80px; height:160px;">
-        <!-- Nhãn Máy cắt: Đưa sang bên phải để thoáng bản vẽ -->
-        <input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)" 
-               style="position:absolute; top:45px; left:90px; width:120px; text-align:left; outline:none;">
-        
-        <!-- Khung máy cắt: Căn lề trái 15px để trục giữa (24px + 1px) nằm đúng vị trí 40px -->
-        <div class="mc-box" onclick="toggleSwitch('${node.id}')" 
-             style="position:absolute; left:15px; top:35px; cursor:pointer; pointer-events:auto; width:50px; height:90px;">
-            
-            <!-- Đường dây trên -->
-            <div class="line-v" style="height:56px; top:-31px; left:24px; background:${p?'var(--on)':'var(--off)'}"></div>
-            
-            <!-- Cánh tay máy cắt (Arm) -->
-            <div class="mc-arm" style="transform:rotate(${s?0:35}deg); left:24px; top:25px; background:${s?(p?'var(--on)':'white'):'var(--off)'}">
-                <div class="pivot" style="top:-3px; background:inherit"></div>
-                <div class="pivot" style="bottom:-3px; background:inherit"></div>
-            </div>
-            
-            <!-- Đường dây dưới -->
-            <div class="line-v" style="height:65px; top:60px; left:24px; background:${(p && s)?'var(--on)':'var(--off)'}"></div>
-        </div>
-    </div>`;
+            if(node.type.startsWith('mc') || node.type === 'mc_tong') {
+                const p = node.powered, s = node.state;
+                html = `<div style="position:relative; width:80px; height:160px;">
+                    <input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)" style="position:absolute; top:45px; left:90px; width:120px; text-align:left; outline:none;">
+                    <div class="mc-box" onclick="toggleSwitch('${node.id}')" style="left:15px; top:35px;">
+                        <div class="line-v" style="height:56px; top:-31px; left:24px; background:${p?'var(--on)':'var(--off)'}"></div>
+                        <div class="mc-arm" style="transform:rotate(${s?0:35}deg); left:24px; top:25px; background:${s?(p?'var(--on)':'white'):'var(--off)'}">
+                            <div class="pivot" style="top:-3px; background:inherit"></div>
+                            <div class="pivot" style="bottom:-3px; background:inherit"></div>
+                        </div>
+                        <div class="line-v" style="height:65px; top:60px; left:24px; background:${(p && s)?'var(--on)':'var(--off)'}"></div>
+                    </div></div>`;
             } else if(node.type === 'mba') {
-    html = `<div style="position:relative; width:80px; height:130px;">
-        <!-- Nhãn MBA - Đưa về absolute để không làm lệch trục Y -->
-        <input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)" 
-              style="position: absolute; 
-                   left: 90px; 
-                   top: 50%; 
-                   transform: translateY(-50%); 
-                   width: 150px; 
-                   text-align: left; 
-                   background: rgba(0,0,0,0.3); 
-                   border: 1px dashed #555; 
-                   outline: none;">
-        
-        <!-- Đường dây phía trên (Sơ cấp) -->
-        <div class="line-v" style="left:39px; height:30px; top:0px; background:${node.powered?'var(--on)':'var(--off)'}"></div>
-        
-        <!-- Ký hiệu SVG - Căn giữa tại X=40 -->
-        <svg width="80" height="60" style="position:absolute; top:30px; left:0">
-            <circle cx="40" cy="18" r="18" stroke="${node.powered?'var(--on)':'var(--box)'}" stroke-width="2" fill="none"/>
-            <circle cx="40" cy="38" r="18" stroke="${node.powered?'var(--on)':'var(--box)'}" stroke-width="2" fill="none"/>
-        </svg>
-        
-        <!-- Đường dây phía dưới (Thứ cấp) -->
-        <div class="line-v" style="left:39px; height:40px; top:90px; background:${node.powered?'var(--on)':'var(--off)'}"></div>
-    </div>`;
+                html = `<div style="position:relative; width:80px; height:130px;">
+                    <input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)" style="position:absolute; left:90px; top:50%; transform:translateY(-50%); width:150px; text-align:left; outline:none;">
+                    <div class="line-v" style="left:39px; height:30px; top:0px; background:${node.powered?'var(--on)':'var(--off)'}"></div>
+                    <svg width="80" height="60" style="position:absolute; top:30px; left:0">
+                        <circle cx="40" cy="18" r="18" stroke="${node.powered?'var(--on)':'var(--box)'}" stroke-width="2" fill="none"/>
+                        <circle cx="40" cy="38" r="18" stroke="${node.powered?'var(--on)':'var(--box)'}" stroke-width="2" fill="none"/>
+                    </svg>
+                    <div class="line-v" style="left:39px; height:40px; top:90px; background:${node.powered?'var(--on)':'var(--off)'}"></div></div>`;
+            } else if(node.type.startsWith('rmu')) {
+                html = getRMUHtml(node);
             } else if(node.type === 'busbar') {
                 html=`<div class="busbar-container"><input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)" style="top:15px; left:0; outline:none">
                     <div class="busbar-line" style="width:${node.width}px; background:${node.powered?'var(--on)':'var(--off)'}" onclick="onBusClick('${node.id}', event)"></div>
                     <div class="bus-handle" onmousedown="startResizeBus(event, '${node.id}')"></div></div>`;
             } else if(node.type === 'text_box') {
                 html=`<div style="border:1px dashed #edca1a; width:${node.width}px; height:${node.height}px; background:rgba(237,202,26,0.05)"><textarea style="width:100%; height:100%; background:transparent; border:none; color:white; text-align:center; outline:none; resize:none" onchange="updateLabel('${node.id}', this.value)">${node.label}</textarea></div>`;
+            } else if(node.type.startsWith('arrow')) {
+                const color = node.powered ? 'var(--on)' : 'var(--off)';
+                html = `<svg width="40" height="60"><path d="${node.type==='arrow_up'?'M20 55 V5 M10 20 L20 5 L30 20':'M20 5 V55 M10 40 L20 55 L30 40'}" stroke="${color}" stroke-width="4" fill="none"/></svg>`;
             }
 
             wrap.innerHTML=html;
             const del=document.createElement('div'); del.className='delete-btn'; del.innerHTML='×';
             del.onclick=(e)=>{e.stopPropagation(); deleteNode(node.id);}; wrap.appendChild(del);
 
-            if(node.type.startsWith('mc')) { createPort(wrap, node, 40, 0, 'top'); createPort(wrap, node,40, 160, 'bottom'); }
+            if(node.type.startsWith('mc')) { createPort(wrap, node, 40, 4, 'top'); createPort(wrap, node, 40, 160, 'bottom'); }
             else if(node.type==='mba') { createPort(wrap, node, 40, 0, 'top'); createPort(wrap, node, 40, 130, 'bottom'); }
             else if(node.type.startsWith('rmu')){ for(let i=0;i<node.states.length;i++) createPort(wrap, node, 50+(i*80), 200, 'bay_'+i); }
             else if(node.type.startsWith('arrow')){ createPort(wrap, node, 20, 30, 'pt'); }
@@ -272,113 +254,37 @@
                     <line x1="10" y1="20" x2="${width-10}" y2="20" stroke="${busC}" stroke-width="4"/>`;
         for(let i=0; i<count; i++) {
             const x = 50 + (i * 80);
-            const s = node.states[i];
-            const es = node.earthStates[i];
-            const wireP = getPortPower(node.id, 'bay_'+i);
-            const hasPower = wireP || (node.powered && s);
-            const lineC = hasPower ? 'var(--on)' : 'var(--off)';
-            const armC = (s && hasPower) ? 'var(--on)' : 'var(--off)';
-            const earthC = es ? 'var(--on)' : 'var(--off)';
+            const s = node.states[i], es = node.earthStates[i], wireP = getPortPower(node.id, 'bay_'+i);
+            const hasPower = wireP || (node.powered && s), lineC = hasPower ? 'var(--on)' : 'var(--off)';
+            const armC = (s && hasPower) ? 'var(--on)' : 'var(--off)', earthC = es ? 'var(--on)' : 'var(--off)';
             h += `<line x1="${x}" y1="20" x2="${x}" y2="40" stroke="${busC}" stroke-width="2"/>
                 <g class="sw-clickable" onclick="toggleRMUSwitch('${node.id}', ${i}, 'main')">
                     <line x1="${x}" y1="40" x2="${x}" y2="${s?70:65}" stroke="${armC}" stroke-width="3" transform="${s?'':'rotate(-35,'+x+',70)'}"/>
-                    <circle cx="${x}" cy="40" r="3" fill="${busC}"/>
-                    <circle cx="${x}" cy="70" r="3" fill="${lineC}"/>
-                    <text x="${x+8}" y="55" class="label-text" fill="white">-7</text>
-                </g>
-                <line x1="${x}" y1="70" x2="${x}" y2="120" stroke="${lineC}" stroke-width="2"/>
+                    <circle cx="${x}" cy="40" r="3" fill="${busC}"/><circle cx="${x}" cy="70" r="3" fill="${lineC}"/>
+                </g><line x1="${x}" y1="70" x2="${x}" y2="120" stroke="${lineC}" stroke-width="2"/>
                 <g class="sw-clickable" onclick="toggleRMUSwitch('${node.id}', ${i}, 'earth')">
                     <line x1="${x}" y1="100" x2="${x+18}" y2="100" stroke="${lineC}" stroke-width="2"/>
                     <line x1="${x+18}" y1="100" x2="${x+32}" y2="${es?100:85}" stroke="${earthC}" stroke-width="3" transform="${es?'':'rotate(-35,'+ (x+36) +',100)'}"/>
                     <circle cx="${x+18}" cy="100" r="2" fill="${lineC}"/>
                     <line x1="${x+36}" y1="90" x2="${x+36}" y2="110" stroke="${earthC}" stroke-width="1.5"/>
-                    <text x="${x+18}" y="85" class="label-text" fill="white">-76</text>
-                </g>
-                <line x1="${x}" y1="120" x2="${x}" y2="160" stroke="${lineC}" stroke-width="2"/>`;
+                </g><line x1="${x}" y1="120" x2="${x}" y2="160" stroke="${lineC}" stroke-width="2"/>`;
         }
-        h += `</svg></div></div>`;
-        return h;
+        h += `</svg></div></div>`; return h;
     }
 
-    // --- INTERACTION ---
-    function toggleSwitch(id) { if(prompt("MK: 123456")==="123456") { const n = data.nodes.find(n=>n.id===id); n.state = !n.state; pushHistory(); render(); } }
+    function toggleSwitch(id) { if(prompt("MK: 123456")==="123456") { const n = data.nodes.find(n=>n.id===id); n.state = !n.state; render(); pushHistory(); } }
     function toggleRMUSwitch(nodeId, bayIdx, type) {
         if(prompt("MK: 123456")!=="123456") return;
         const n = data.nodes.find(n=>n.id===nodeId);
-        if(type === 'main') {
-            if(!n.states[bayIdx] && n.earthStates[bayIdx]) { alert("Dao tiếp đất -76 đang Đóng!"); return; }
-            n.states[bayIdx] = !n.states[bayIdx];
-        } else {
-            if(!n.earthStates[bayIdx]) {
-                if(n.states[bayIdx]) { alert("Dao -7 đang Đóng!"); return; }
-                if(getPortPower(nodeId, 'bay_'+bayIdx)) { alert("Đường dây đang có điện (Màu đỏ), không được phép đóng tiếp đất!"); return; }
-            }
-            n.earthStates[bayIdx] = !n.earthStates[bayIdx];
-        }
-        pushHistory(); render();
+        if(type === 'main') { if(!n.states[bayIdx] && n.earthStates[bayIdx]) { alert("Dao tiếp đất -76 đang Đóng!"); return; } n.states[bayIdx] = !n.states[bayIdx]; }
+        else { if(!n.earthStates[bayIdx]) { if(n.states[bayIdx]) { alert("Dao -7 đang Đóng!"); return; } if(getPortPower(nodeId, 'bay_'+bayIdx)) { alert("Đường dây có điện!"); return; } } n.earthStates[bayIdx] = !n.earthStates[bayIdx]; }
+        render(); pushHistory();
     }
 
-    // --- SHARED ---
-    / 1. Khi bắt đầu kéo: Lưu kiểu thiết bị vào bộ nhớ đệm "text"
-function evDrag(e, type) {
-    e.dataTransfer.setData("text", type); 
-    e.dataTransfer.effectAllowed = "copy";
-}
-
-// 2. Khi thả vào Workspace
-function evDrop(e) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    // Lấy dữ liệu kiểu thiết bị ra
-    const type = e.dataTransfer.getData("text");
-    if (!type) return; // Nếu không có dữ liệu thì thoát
-
-    const rect = canvasContainer.getBoundingClientRect();
-    
-    // Tính toán tọa độ chuẩn (Account cho Zoom và vị trí Canvas)
-    const x = (e.clientX - rect.left) / currentZoom;
-    const y = (e.clientY - rect.top) / currentZoom;
-
-    // Tạo đối tượng Node mới
-    let node = {
-        id: 'n' + Date.now(),
-        type: type,
-        x: x,
-        y: y,
-        label: (type === 'text_box' ? "Ghi chú..." : "")
-    };
-
-    // Khởi tạo các thuộc tính riêng cho từng loại thiết bị
-    if (type.startsWith('rmu')) {
-        const count = {rmu2: 2, rmu3: 3, rmu4: 4, rmu5: 5}[type];
-        node.states = new Array(count).fill(false);
-        node.earthStates = new Array(count).fill(false);
-    } 
-    else if (type.startsWith('arrow')) {
-        node.powered = false;
-    } 
-    else if (type === 'busbar') {
-        node.width = 200;
-    } 
-    else if (type === 'text_box') {
-        node.width = 150;
-        node.height = 50;
-    } 
-    else {
-        node.state = false; // Mặc định cho Máy cắt (MC)
-    }
-
-    // Đẩy vào mảng dữ liệu và vẽ lại
-    data.nodes.push(node);
-    pushHistory();
-    render();
-}
     function createPort(p, n, rx, ry, name) { const d=document.createElement('div'); d.className='port'; d.style.left=rx+'px'; d.style.top=ry+'px'; d.onclick=(e)=>{e.stopPropagation(); onPortClick(n.id, name, rx, ry);}; p.appendChild(d); }
     function onPortClick(id, port, rx, ry) { const n=data.nodes.find(n=>n.id===id); if(!selectedPort){ selectedPort={id, port, rx, ry, abs:{x:n.x+rx, y:n.y+ry}}; ghostPath.style.display='block'; } else { if(selectedPort.id !== id){ data.wires.push({ from: selectedPort.id, fromPort: selectedPort.port, fRel:{x:selectedPort.rx,y:selectedPort.ry}, to:id, toPort:port, tRel:{x:rx,y:ry}, midY: (selectedPort.abs.y + n.y+ry)/2 }); pushHistory(); } selectedPort=null; ghostPath.style.display='none'; render(); } }
     function onBusClick(id, e) { const node=data.nodes.find(n=>n.id===id), rect=e.currentTarget.getBoundingClientRect(), rx=(e.clientX-rect.left)/currentZoom; if(!selectedPort){ selectedPort={id, port:'bus', rx, ry:46, abs:{x:node.x+rx, y:node.y+46}}; ghostPath.style.display='block'; } else { data.wires.push({ from:selectedPort.id, fromPort:selectedPort.port, fRel:{x:selectedPort.rx,y:selectedPort.ry}, to:id, toPort:'bus', tRel:{x:rx,y:46}, midY:(selectedPort.abs.y+node.y+46)/2 }); selectedPort=null; ghostPath.style.display='none'; render(); pushHistory(); } }
     function renderWires() { let svg = ''; data.wires.forEach((w, i) => { const n1=data.nodes.find(n=>n.id===w.from), n2=data.nodes.find(n=>n.id===w.to); if(!n1 || !n2) return; const isP = (n1.powered && isPortActive(n1, w.fromPort)) || (n2.powered && isPortActive(n2, w.toPort)); const x1=n1.x+w.fRel.x, y1=n1.y+w.fRel.y, x2=n2.x+w.tRel.x, y2=n2.y+w.tRel.y; svg += `<path d="M ${x1} ${y1} V ${w.midY} H ${x2} V ${y2}" class="wire-path ${isP?'powered':''}" onmousedown="draggingWireIdx = ${i}" onclick="if(event.ctrlKey) deleteWire(${i})"/>`; }); connLayer.innerHTML = `<path id="ghost-path" style="stroke:#fff;stroke-width:2;stroke-dasharray:5;fill:none;display:${selectedPort?'block':'none'}" d="${ghostPath.getAttribute('d')}"></path>` + svg; }
-    function startDragWire(e, i) { e.stopPropagation(); draggingWireIdx = i; }
     function stopDragging() { if(draggingWireIdx!==null){ draggingWireIdx=null; pushHistory(); } }
     canvas.onmousemove = (e) => { const rect=canvas.getBoundingClientRect(), mx=(e.clientX-rect.left)/currentZoom, my=(e.clientY-rect.top)/currentZoom; if(selectedPort) ghostPath.setAttribute('d', `M ${selectedPort.abs.x} ${selectedPort.abs.y} V ${my} H ${mx} V ${my}`); if(draggingWireIdx !== null) { data.wires[draggingWireIdx].midY = my; renderWires(); } };
     function undo() { if(history.length>1){ history.pop(); data=JSON.parse(history[history.length-1]); render(); } }
