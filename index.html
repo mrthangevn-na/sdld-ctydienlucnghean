@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SLD Engineer Pro v11.0 - Full Zoom & Pan OMS Style</title>
+    <title>SLD Engineer Pro v11.0 - High Resolution & Zoom</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -12,21 +12,21 @@
         :root { --bg: #0b0b0b; --panel: #1e1e1e; --accent: #4a90e2; --on: #ff0000; --off: #00ff00; --box: #3b5b91; }
         body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
 
-        .header { height: 50px; background: var(--panel); display: flex; align-items: center; padding: 0 15px; border-bottom: 1px solid #333; justify-content: space-between; z-index: 1001; position: relative; }
-        .header-left { display: flex; align-items: center; gap: 10px; }
-        .project-title { position: absolute; left: 50%; transform: translateX(-50%); color: #edca1a; font-weight: bold; font-size: 14px; text-transform: uppercase; pointer-events: none; white-space: nowrap; }
-        .top-btns { display: flex; gap: 8px; align-items: center; }
+        /* Header tối ưu cho màn hình lớn */
+        .header { height: 60px; background: var(--panel); display: flex; align-items: center; padding: 0 20px; border-bottom: 1px solid #333; justify-content: space-between; z-index: 1001; position: relative; }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .project-title { position: absolute; left: 50%; transform: translateX(-50%); color: #edca1a; font-weight: bold; font-size: 18px; text-transform: uppercase; pointer-events: none; white-space: nowrap; letter-spacing: 1px; }
         
-        button { background: #333; color: white; border: 1px solid #555; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-size: 11px; font-weight: bold; transition: 0.2s; }
+        button { background: #333; color: white; border: 1px solid #555; padding: 8px 16px; cursor: pointer; border-radius: 4px; font-size: 13px; font-weight: bold; transition: 0.2s; }
         button:hover { background: var(--accent); }
 
-        .main { display: flex; height: calc(100% - 50px); position: relative; }
-        .sidebar { width: 200px; background: var(--panel); border-right: 1px solid #333; padding: 15px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; z-index: 1000; transition: 0.3s; }
-        .sidebar.collapsed { width: 0; padding: 0; border: none; overflow: hidden; }
-        .tool-item { background: #2d2d2d; border: 1px solid #444; padding: 12px; border-radius: 6px; cursor: grab; text-align: center; font-size: 11px; user-select: none; }
+        .main { display: flex; height: calc(100% - 60px); position: relative; }
+        .sidebar { width: 220px; background: var(--panel); border-right: 1px solid #333; padding: 15px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; z-index: 1000; }
+        .tool-item { background: #2d2d2d; border: 1px solid #444; padding: 12px; border-radius: 6px; cursor: grab; text-align: center; font-size: 12px; user-select: none; }
 
-        .workspace { flex: 1; position: relative; overflow: hidden; background-image: radial-gradient(#222 1px, transparent 1px); background-size: 20px 20px; cursor: crosshair; }
-        #canvas-container { transform-origin: 0 0; width: 5000px; height: 5000px; position: absolute; top: 0; left: 0; }
+        /* Workspace hỗ trợ Zoom/Pan */
+        .workspace { flex: 1; position: relative; overflow: hidden; background-image: radial-gradient(#222 1.5px, transparent 1.5px); background-size: 30px 30px; cursor: crosshair; }
+        #canvas-container { transform-origin: 0 0; width: 6000px; height: 6000px; position: absolute; top: 0; left: 0; transition: none; }
         #canvas { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
 
         .obj-wrap { position: absolute; cursor: move; z-index: 10; touch-action: none; }
@@ -35,13 +35,13 @@
 
         .symbol-box { border: 2px solid var(--box); position: relative; background: rgba(0,0,0,0.5); border-radius: 4px; }
         .sw-clickable { cursor: pointer; pointer-events: auto; }
-        .port { width: 14px; height: 14px; background: #edca1a; border-radius: 50%; position: absolute; cursor: pointer; z-index: 50; border: 2px solid #000; transform: translate(-50%, -50%); }
+        .port { width: 16px; height: 16px; background: #edca1a; border-radius: 50%; position: absolute; cursor: pointer; z-index: 50; border: 2px solid #000; transform: translate(-50%, -50%); }
 
-        .wire-path { stroke: var(--off); stroke-width: 5; fill: none; pointer-events: stroke; cursor: ns-resize; }
+        .wire-path { stroke: var(--off); stroke-width: 6; fill: none; pointer-events: stroke; cursor: ns-resize; }
         .wire-path.powered { stroke: var(--on) !important; }
 
         .mc-box { width: 50px; height: 90px; border: 2px solid var(--box); background: #000; position: absolute; }
-        .mc-label { position: absolute; background: transparent; border: 1px dashed #555; color: #edca1a; font-weight: bold; font-size: 12px; outline: none; }
+        .mc-label { position: absolute; background: transparent; border: 1px dashed #555; color: #edca1a; font-weight: bold; font-size: 14px; outline: none; white-space: nowrap; }
         .line-v { position: absolute; width: 2px; }
         .mc-arm { position: absolute; width: 2px; height: 35px; transform-origin: bottom center; transition: 0.3s; }
         .pivot { position: absolute; width: 6px; height: 6px; border: 1px solid #fff; border-radius: 50%; left: -3px; background: inherit; }
@@ -49,15 +49,16 @@
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: center; justify-content: center; }
         .modal-content { background: #1a1a1a; border: 1px solid #444; width: 450px; border-radius: 12px; padding: 25px; display: flex; flex-direction: column; }
         .project-list { overflow-y: auto; flex: 1; min-height: 250px; margin-top: 10px; border: 1px solid #333; background: #000; }
+        .project-item { padding: 12px; border-bottom: 1px solid #222; cursor: pointer; }
+        .project-item:hover { background: #1e3a5f; }
     </style>
 </head>
 <body onmouseup="stopDragging()">
 
 <div class="header">
     <div class="header-left">
-        <button onclick="document.getElementById('sidebar').classList.toggle('collapsed')" style="background:#4a90e2;">☰ MENU</button>
         <button onclick="undo()">↩ Undo</button>
-        <span id="zoomLabel" style="font-size:12px; color:#888; margin-left:10px">Zoom: 100%</span>
+        <span id="zoomLabel" style="color: #888; font-size: 14px; font-weight: bold;">Zoom: 100%</span>
     </div>
     <div class="project-title" id="displayProjectName">DỰ ÁN TRỐNG</div>
     <div class="top-btns">
@@ -93,10 +94,10 @@
 
 <!-- Modals -->
 <div id="openModal" class="modal"><div class="modal-content"><div>MỞ DỰ ÁN</div><div id="openList" class="project-list"></div><button onclick="confirmOpen()">MỞ</button><button onclick="closeModal('openModal')">ĐÓNG</button></div></div>
-<div id="saveModal" class="modal"><div class="modal-content"><div>LƯU DỰ ÁN</div><input type="text" id="saveInput" style="width:100%; margin:10px 0; padding:8px; background:#000; border:1px solid #444; color:#fff;"><button onclick="confirmSaveAs()">LƯU</button><button onclick="closeModal('saveModal')">ĐÓNG</button></div></div>
+<div id="saveModal" class="modal"><div class="modal-content"><div>LƯU DỰ ÁN</div><input type="text" id="saveInput" style="width:100%; margin:10px 0; padding:10px; background:#000; color:#fff; border:1px solid #444;"><button onclick="confirmSaveAs()">LƯU</button><button onclick="closeModal('saveModal')">ĐÓNG</button></div></div>
 
 <script>
-    // --- FIREBASE CONFIG ---
+    // --- FIREBASE CONFIG (Giữ nguyên) ---
     const firebaseConfig = {
         apiKey: "AIzaSyC9aGNmyKDkHvqQg0CY9SfrmNrMhFQGSzo",
         authDomain: "my-sld-project.firebaseapp.com",
@@ -114,7 +115,7 @@
     let selectedPort = null;
     let draggingWireIdx = null;
 
-    // --- BIẾN PHỤC VỤ ZOOM & PAN ---
+    // --- BIẾN ZOOM & PAN ---
     let scale = 1.0;
     let offsetX = 0;
     let offsetY = 0;
@@ -128,31 +129,32 @@
     const connLayer = document.getElementById('conn-layer');
     const ghostPath = document.getElementById('ghost-path');
 
-    // --- HỆ THỐNG ZOOM & PAN (OMS STYLE) ---
+    // --- HÀM CẬP NHẬT VIEW ---
     function updateTransform() {
         canvasContainer.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
         document.getElementById('zoomLabel').innerText = `Zoom: ${Math.round(scale * 100)}%`;
     }
 
+    // --- ZOOM BẰNG CON LĂN ---
     workspace.onwheel = (e) => {
         e.preventDefault();
         const zoomSpeed = 0.1;
         const delta = e.deltaY > 0 ? -zoomSpeed : zoomSpeed;
         const oldScale = scale;
-        scale = Math.min(Math.max(0.1, scale + delta), 5); // Zoom từ 10% đến 500%
+        scale = Math.min(Math.max(0.1, scale + delta), 5);
 
         const rect = workspace.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
-        // Công thức zoom tập trung vào tâm con trỏ chuột
         offsetX -= (mouseX - offsetX) * (scale / oldScale - 1);
         offsetY -= (mouseY - offsetY) * (scale / oldScale - 1);
         updateTransform();
     };
 
+    // --- PAN (KÉO BẢN VẼ) ---
     workspace.onmousedown = (e) => {
-        if (e.button === 1 || e.button === 2) { // Chuột giữa hoặc chuột phải để kéo (Pan)
+        if (e.button === 1 || e.button === 2) {
             isPanning = true;
             startPanX = e.clientX - offsetX;
             startPanY = e.clientY - offsetY;
@@ -163,7 +165,7 @@
 
     window.onmousemove = (e) => {
         const rect = workspace.getBoundingClientRect();
-        // Tọa độ chuột thực tế trên Canvas (đã tính Scale/Offset)
+        // Tọa độ chuột trong hệ tọa độ Canvas đã Zoom
         const mx = (e.clientX - rect.left - offsetX) / scale;
         const my = (e.clientY - rect.top - offsetY) / scale;
 
@@ -182,9 +184,9 @@
     };
 
     window.onmouseup = () => { isPanning = false; workspace.style.cursor = 'crosshair'; };
-    workspace.oncontextmenu = (e) => e.preventDefault(); // Chống menu chuột phải để dùng Pan
+    workspace.oncontextmenu = (e) => e.preventDefault();
 
-    // --- LOGIC FILE ---
+    // --- FILE MGMT ---
     function handleNew() { if(data.nodes.length > 0 && confirm("Lưu dự án hiện tại trước khi tạo mới?")) openSaveModal(() => resetB()); else resetB(); }
     function resetB() { let n = prompt("Tên dự án:"); if(!n) return; data={nodes:[],wires:[]}; selectedProjectName=n; document.getElementById('displayProjectName').innerText=n.toUpperCase(); render(); pushHistory(); }
     function handleSave() { if(!selectedProjectName) openSaveModal(); else db.ref('projects/'+selectedProjectName).set(data).then(()=>alert("Đã lưu!")); }
@@ -202,13 +204,12 @@
         const type = e.dataTransfer.getData("text");
         if(!type) return;
         const rect = workspace.getBoundingClientRect();
-        // Tính toán tọa độ thả chuẩn theo mức Zoom và Pan hiện tại
         const x = (e.clientX - rect.left - offsetX) / scale;
         const y = (e.clientY - rect.top - offsetY) / scale;
         let node = {id:'n'+Date.now(), type, x, y, label:""};
         if(type.startsWith('rmu')){ node.states=[false, false]; node.earthStates=[false, false]; }
         else if(type==='busbar') node.width=200;
-        else if(type==='text_box'){ node.label="Ghi chú..."; node.width=150; node.height=50; }
+        else if(type==='text_box'){ node.label="Ghi chú..."; node.width=200; node.height=80; }
         else node.state=false;
         data.nodes.push(node); render(); pushHistory();
     }
@@ -240,15 +241,15 @@
             if(node.type.startsWith('mc') || node.type === 'mc_tong') {
                 const p = node.powered, s = node.state;
                 html = `<div style="position:relative; width:80px; height:160px;">
-                    <input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)" style="position:absolute; top:45px; left:90px; width:120px; text-align:left; outline:none;">
-                    <div class="mc-box" onclick="toggleSwitch('${node.id}')" style="left:15px; top:35px;">
+                    <input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)" style="position:absolute; top:45px; left:90px; width:150px; text-align:left; outline:none;">
+                    <div class="mc-box" onclick="toggleSwitch('${node.id}')" style="left:15px; top:35px; cursor:pointer;">
                         <div class="line-v" style="height:56px; top:-31px; left:24px; background:${p?'var(--on)':'var(--off)'}"></div>
                         <div class="mc-arm" style="transform:rotate(${s?0:35}deg); left:24px; top:25px; background:${s?(p?'var(--on)':'white'):'var(--off)'}"><div class="pivot" style="top:-3px; background:inherit"></div><div class="pivot" style="bottom:-3px; background:inherit"></div></div>
                         <div class="line-v" style="height:65px; top:60px; left:24px; background:${(p && s)?'var(--on)':'var(--off)'}"></div>
                     </div></div>`;
             } else if(node.type === 'mba') {
                 html = `<div style="position:relative; width:80px; height:130px;">
-                    <input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)" style="position:absolute; left:90px; top:50%; transform:translateY(-50%); width:150px; text-align:left; outline:none;">
+                    <input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)" style="position:absolute; left:90px; top:50%; transform:translateY(-50%); width:180px; text-align:left; outline:none;">
                     <div class="line-v" style="left:39px; height:30px; top:0px; background:${node.powered?'var(--on)':'var(--off)'}"></div>
                     <svg width="80" height="60" style="position:absolute; top:30px; left:0">
                         <circle cx="40" cy="18" r="18" stroke="${node.powered?'var(--on)':'var(--box)'}" stroke-width="2" fill="none"/>
@@ -260,6 +261,11 @@
                 html=`<div class="busbar-container"><input class="mc-label" value="${node.label}" onchange="updateLabel('${node.id}', this.value)" style="top:15px; left:0; outline:none">
                     <div class="busbar-line" style="width:${node.width}px; background:${node.powered?'var(--on)':'var(--off)'}" onclick="onBusClick('${node.id}', event)"></div>
                     <div class="bus-handle" onmousedown="startResizeBus(event, '${node.id}')"></div></div>`;
+            } else if(node.type === 'text_box') {
+                html=`<div style="border:1px dashed #edca1a; width:${node.width}px; height:${node.height}px; background:rgba(237,202,26,0.05)"><textarea style="width:100%; height:100%; background:transparent; border:none; color:white; text-align:center; outline:none; resize:none" onchange="updateLabel('${node.id}', this.value)">${node.label}</textarea></div>`;
+            } else if(node.type.startsWith('arrow')) {
+                const color = node.powered ? 'var(--on)' : 'var(--off)';
+                html = `<svg width="40" height="60"><path d="${node.type==='arrow_up'?'M20 55 V5 M10 20 L20 5 L30 20':'M20 5 V55 M10 40 L20 55 L30 40'}" stroke="${color}" stroke-width="4" fill="none"/></svg>`;
             }
 
             wrap.innerHTML=html;
@@ -269,6 +275,7 @@
             if(node.type.startsWith('mc')) { createPort(wrap, node, 40, 4, 'top'); createPort(wrap, node, 40, 160, 'bottom'); }
             else if(node.type==='mba') { createPort(wrap, node, 40, 0, 'top'); createPort(wrap, node, 40, 130, 'bottom'); }
             else if(node.type.startsWith('rmu')){ createPort(wrap, node, 50, 200, 'bay_0'); }
+            else if(node.type.startsWith('arrow')){ createPort(wrap, node, 20, 30, 'pt'); }
 
             makeDraggable(wrap, node); canvas.appendChild(wrap);
         });
@@ -289,7 +296,7 @@
     function onBusClick(id, e) { const node=data.nodes.find(n=>n.id===id), rect=workspace.getBoundingClientRect(), rx=(e.clientX-rect.left-offsetX)/scale - node.x; if(!selectedPort){ selectedPort={id, port:'bus', rx, ry:46, abs:{x:node.x+rx, y:node.y+46}}; ghostPath.style.display='block'; } else { data.wires.push({ from:selectedPort.id, fromPort:selectedPort.port, fRel:{x:selectedPort.rx,y:selectedPort.ry}, to:id, toPort:'bus', tRel:{x:rx,y:46}, midY:(selectedPort.abs.y+node.y+46)/2 }); selectedPort=null; ghostPath.style.display='none'; render(); pushHistory(); } }
     function renderWires() { let svg = ''; data.wires.forEach((w, i) => { const n1=data.nodes.find(n=>n.id===w.from), n2=data.nodes.find(n=>n.id===w.to); if(!n1 || !n2) return; const isP = (n1.powered && (n1.type.startsWith('mc')?n1.state:true)) || (n2.powered && (n2.type.startsWith('mc')?n2.state:true)); const x1=n1.x+w.fRel.x, y1=n1.y+w.fRel.y, x2=n2.x+w.tRel.x, y2=n2.y+w.tRel.y; svg += `<path d="M ${x1} ${y1} V ${w.midY} H ${x2} V ${y2}" class="wire-path ${isP?'powered':''}" onmousedown="draggingWireIdx = ${i}" onclick="if(event.ctrlKey) deleteWire(${i})"/>`; }); connLayer.innerHTML = ghostPath.outerHTML + svg; }
     function stopDragging() { draggingWireIdx = null; }
-    function pushHistory() { history.push(JSON.stringify(data)); if(history.length>50) history.shift(); }
+    function pushHistory() { const s=JSON.stringify(data); if(!history.length || history[history.length-1]!==s) { history.push(s); if(history.length>50) history.shift(); } }
     function undo() { if(history.length>1){ history.pop(); data=JSON.parse(history[history.length-1]); render(); } }
     function updateLabel(id, v) { data.nodes.find(n=>n.id===id).label=v; pushHistory(); }
     function deleteNode(id) { data.nodes=data.nodes.filter(n=>n.id!==id); data.wires=data.wires.filter(w=>w.from!==id && w.to!==id); render(); pushHistory(); }
