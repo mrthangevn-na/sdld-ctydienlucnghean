@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SLD Engineer Pro v11.8 - Default Zoom 200%</title>
+    <title>SLD Engineer Pro v11.7 - Full RMU 5 & Zoom/Pan</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -53,7 +53,6 @@
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: center; justify-content: center; }
         .modal-content { background: #1a1a1a; border: 1px solid #444; width: 450px; border-radius: 12px; padding: 25px; }
         .project-list { overflow-y: auto; flex: 1; min-height: 250px; margin-top: 10px; border: 1px solid #333; background: #000; }
-        .project-item { padding: 12px; border-bottom: 1px solid #222; cursor: pointer; }
     </style>
 </head>
 <body onmouseup="stopDragging()">
@@ -62,7 +61,7 @@
     <div class="header-left">
         <button onclick="document.getElementById('sidebar').classList.toggle('collapsed')" style="background:#4a90e2;">☰ MENU</button>
         <button onclick="undo()">↩ Undo</button>
-        <span id="zoomLabel" style="color:#888; font-size:12px; margin-left:10px">Zoom: 200%</span>
+        <span id="zoomLabel" style="color:#888; font-size:12px; margin-left:10px">Zoom: 100%</span>
     </div>
     <div class="project-title" id="displayProjectName">DỰ ÁN TRỐNG</div>
     <div style="display:flex; gap:8px">
@@ -120,10 +119,7 @@
     let data = { nodes: [], wires: [] };
     let history = [];
     let selectedPort = null, draggingWireIdx = null;
-
-    // --- ZOOM & PAN (Mặc định 200%) ---
-    let scale = 2.0; 
-    let offsetX = 0, offsetY = 0, isPanning = false, startPanX = 0, startPanY = 0;
+    let scale = 1.0, offsetX = 0, offsetY = 0, isPanning = false, startPanX = 0, startPanY = 0;
 
     const workspace = document.getElementById('workspace'), canvas = document.getElementById('canvas');
     const canvasContainer = document.getElementById('canvas-container'), connLayer = document.getElementById('conn-layer'), ghostPath = document.getElementById('ghost-path');
@@ -133,13 +129,10 @@
         document.getElementById('zoomLabel').innerText = `Zoom: ${Math.round(scale * 100)}%`;
     }
 
-    // Khởi tạo transform ban đầu 200%
-    updateTransform();
-
     workspace.onwheel = (e) => {
         e.preventDefault();
         const zoomSpeed = 0.1, delta = e.deltaY > 0 ? -zoomSpeed : zoomSpeed, oldScale = scale;
-        scale = Math.min(Math.max(0.1, scale + delta), 5); // Dải Zoom 10% - 500%
+        scale = Math.min(Math.max(0.1, scale + delta), 5);
         const rect = workspace.getBoundingClientRect(), mouseX = e.clientX - rect.left, mouseY = e.clientY - rect.top;
         offsetX -= (mouseX - offsetX) * (scale / oldScale - 1);
         offsetY -= (mouseY - offsetY) * (scale / oldScale - 1);
@@ -290,7 +283,6 @@
     function updateLabel(id, v) { data.nodes.find(n=>n.id===id).label=v; pushHistory(); }
     function deleteNode(id) { data.nodes=data.nodes.filter(n=>n.id!==id); data.wires=data.wires.filter(w=>w.from!==id && w.to!==id); render(); pushHistory(); }
     function deleteWire(i) { data.wires.splice(i,1); render(); pushHistory(); }
-    
     function startResizeBus(e, id) { e.stopPropagation(); const n=data.nodes.find(n=>n.id===id); let sx=e.clientX, sw=n.width; document.onmousemove=(ev)=>{ n.width=sw+(ev.clientX-sx)/scale; render(); }; document.onmouseup=()=>{document.onmousemove=null; pushHistory();}; }
     function makeDraggable(el, node) { el.onmousedown=(e)=>{ if(e.button!==0 || e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.classList.contains('port')||e.target.closest('.sw-clickable')) return; let ox=e.clientX, oy=e.clientY; document.onmousemove=(ev)=>{ node.x+=(ev.clientX-ox)/scale; node.y+=(ev.clientY-oy)/scale; ox=ev.clientX; oy=ev.clientY; el.style.left=node.x+'px'; el.style.top=node.y+'px'; renderWires(); }; document.onmouseup=()=>{document.onmousemove=null; pushHistory();}; }; }
     function handleNew() { if(data.nodes.length > 0 && confirm("Lưu dự án hiện tại?")) openSaveModal(() => resetB()); else resetB(); }
@@ -300,7 +292,7 @@
     function confirmOpen() { if(!nameInList) return; db.ref('projects/'+nameInList).once('value', s => { data=s.val()||{nodes:[],wires:[]}; selectedProjectName=nameInList; document.getElementById('displayProjectName').innerText=selectedProjectName.toUpperCase(); render(); closeModal('openModal'); }); }
     function openSaveModal() { document.getElementById('saveModal').style.display='flex'; fetchP('saveList', (n)=>document.getElementById('saveInput').value=n); }
     function confirmSaveAs() { let n = document.getElementById('saveInput').value.trim(); if(n) db.ref('projects/'+n).set(data).then(()=>{ selectedProjectName=n; document.getElementById('displayProjectName').innerText=n.toUpperCase(); closeModal('saveModal'); }); }
-    function fetchP(cid, onS) { const div=document.getElementById(cid); div.innerHTML="..."; db.ref('projects').once('value', s => { div.innerHTML=""; s.forEach(c => { const i=document.createElement('div'); i.className='project-item'; i.innerText="📁 "+c.key; i.onclick=()=>{ onS(c.key); }; div.appendChild(i); }); }); }
+    function fetchP(cid, onS) { const div=document.getElementById(cid); div.innerHTML="..."; db.ref('projects').once('value', s => { div.innerHTML=""; if(s.exists()) s.forEach(c => { const i=document.createElement('div'); i.className='project-item'; i.innerText="📁 "+c.key; i.onclick=()=>{ onS(c.key); }; div.appendChild(i); }); }); }
     function closeModal(id) { document.getElementById(id).style.display='none'; }
     render();
 </script>
